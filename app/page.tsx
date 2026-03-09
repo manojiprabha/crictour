@@ -32,14 +32,14 @@ export default function Home() {
       <main className="flex-grow flex flex-col">
         
         {/* HERO SECTION */}
-        <section className="relative bg-[#12372A] text-white py-12 lg:py-16 border-b border-[#1a4d3b]">
+        <section className="relative bg-gradient-to-br from-[#12372A] to-[#1f5a44] text-white py-12 lg:py-16 border-b border-[#1a4d3b]">
           <div className="absolute inset-0 opacity-5 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/grass.png')]"></div>
 
           <div className="relative z-10 max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-8 items-center">
             <div className="text-left">
               <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight mb-3">CricTour</h1>
               <p className="text-base lg:text-lg text-emerald-100 mb-6 max-w-md leading-snug">
-                The UK's dedicated network for cricket clubs to fill fixture gaps and organize seamless tours.
+                The UK network for cricket clubs to fill fixture gaps and organise tours.
               </p>
               
               <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs lg:text-sm text-emerald-50/80">
@@ -52,7 +52,7 @@ export default function Home() {
 
             {/* AUTH CARD - Fixed Height Buttons */}
             <div className="bg-white text-slate-900 rounded-xl shadow-2xl p-6 lg:p-8 w-full max-w-[360px] mx-auto lg:mr-0 border border-white/10 flex flex-col gap-4">
-              <h2 className="text-lg font-bold text-slate-800 text-center">Join the Network</h2>
+              <h2 className="text-lg font-bold text-slate-800 text-center">Join CricTour</h2>
               
               <button
                 onClick={googleLogin}
@@ -115,8 +115,8 @@ export default function Home() {
 
             <div className="grid md:grid-cols-3 gap-6">
               <FeatureCard icon="🏏" title="Post Fixtures" description="Broadcast open dates instantly." />
-              <FeatureCard icon="🔍" title="Find Opponents" description="Filter by region or strength." />
-              <FeatureCard icon="🚌" title="Tour Support" description="Connect with host clubs easily." />
+              <FeatureCard icon="🔎" title="Find Opponents" description="Filter by region or strength." />
+              <FeatureCard icon="✈️" title="Plan Tours" description="Connect with host clubs easily." />
             </div>
           </div>
         </section>
@@ -125,7 +125,7 @@ export default function Home() {
       {/* FOOTER - Pinned firmly at the bottom */}
       <footer className="py-6 bg-white border-t border-slate-100 text-center">
         <p className="text-[10px] text-slate-400 tracking-widest uppercase font-medium">
-          © 2026 CricTour • Built for the Spirit of Cricket
+          © 2026 CricTour — Connecting Cricket Clubs Across the UK
         </p>
       </footer>
     </div>
