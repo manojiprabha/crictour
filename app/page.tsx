@@ -1,144 +1,72 @@
 "use client"
 
-import { useState } from "react"
 import { supabase } from "@/lib/supabase"
-import { useRouter } from "next/navigation"
 
 export default function Home() {
 
-const router = useRouter()
-
-const [email,setEmail]=useState("")
-const [password,setPassword]=useState("")
-const [showEmail,setShowEmail]=useState(false)
-
-async function googleLogin(){
-const { error } = await supabase.auth.signInWithOAuth({
-provider:"google"
-})
-if(error) alert(error.message)
+async function signInWithGoogle() {
+  await supabase.auth.signInWithOAuth({
+    provider: "google"
+  })
 }
-
-async function emailSignup(){
-const { error } = await supabase.auth.signUp({
-email,
-password
-})
-
-if(error){
-alert(error.message)
-}else{
-alert("Check your email to confirm your account")
-}
-}
-
-supabase.auth.onAuthStateChange((event,session)=>{
-if(session){
-router.push("/register-club")
-}
-})
 
 return (
 
-<div className="min-h-screen bg-gray-100">
+<div className="min-h-screen bg-gray-50">
 
 {/* HERO */}
 
-<div className="bg-[#0a2540] text-white py-20">
+<section className="bg-[#0a2540] text-white py-24">
 
-<div className="max-w-4xl mx-auto text-center">
+<div className="max-w-5xl mx-auto text-center px-6">
 
-<h1 className="text-5xl font-bold mb-4">
+<h1 className="text-5xl font-bold mb-6">
 CricTour
 </h1>
 
-<p className="text-xl opacity-90 mb-10">
+<p className="text-xl mb-10 opacity-90">
 Find Friendly Cricket Matches & Plan Club Tours
 </p>
 
-<div className="bg-white text-black p-8 rounded-xl shadow-lg max-w-md mx-auto">
-
 <button
-onClick={googleLogin}
-className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold"
+onClick={signInWithGoogle}
+className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-lg text-lg font-semibold"
 >
 Sign in with Google
 </button>
 
-<p className="text-gray-500 my-4">or</p>
-
-<button
-onClick={()=>setShowEmail(true)}
-className="w-full border py-3 rounded-lg hover:bg-gray-100"
->
-Register with Email
-</button>
-
-{showEmail && (
-
-<div className="mt-4 space-y-3">
-
-<input
-type="email"
-placeholder="Email"
-className="w-full border p-2 rounded"
-value={email}
-onChange={(e)=>setEmail(e.target.value)}
-/>
-
-<input
-type="password"
-placeholder="Password"
-className="w-full border p-2 rounded"
-value={password}
-onChange={(e)=>setPassword(e.target.value)}
-/>
-
-<button
-onClick={emailSignup}
-className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded"
->
-Create Account
-</button>
-
 </div>
 
-)}
-
-</div>
-
-</div>
-
-</div>
+</section>
 
 {/* PROBLEM */}
 
-<section className="max-w-3xl mx-auto text-center py-20 px-6">
+<section className="py-20 max-w-3xl mx-auto text-center px-6">
 
 <h2 className="text-3xl font-bold mb-6">
 The Problem
 </h2>
 
-<p className="text-gray-700 text-lg">
+<p className="text-lg text-gray-600">
 Finding friendly matches or arranging cricket tours often relies on
 personal contacts, WhatsApp groups and manual coordination.
 </p>
 
 </section>
 
-{/* FEATURES */}
+{/* HOW IT WORKS */}
 
-<section className="max-w-5xl mx-auto py-10 px-6">
+<section className="py-20 bg-white">
 
 <h2 className="text-3xl font-bold text-center mb-12">
 How CricTour Works
 </h2>
 
-<div className="grid md:grid-cols-3 gap-8">
+<div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8 px-6">
 
-<div className="bg-white p-6 rounded-xl shadow">
+<div className="p-6 rounded-xl shadow">
 
-<h3 className="text-xl font-semibold mb-2">
+<h3 className="text-xl font-semibold mb-3">
 Post a Match
 </h3>
 
@@ -148,9 +76,9 @@ Clubs can post friendly match requests or tour plans.
 
 </div>
 
-<div className="bg-white p-6 rounded-xl shadow">
+<div className="p-6 rounded-xl shadow">
 
-<h3 className="text-xl font-semibold mb-2">
+<h3 className="text-xl font-semibold mb-3">
 Find Opponents
 </h3>
 
@@ -160,9 +88,9 @@ Browse clubs looking for matches in your area.
 
 </div>
 
-<div className="bg-white p-6 rounded-xl shadow">
+<div className="p-6 rounded-xl shadow">
 
-<h3 className="text-xl font-semibold mb-2">
+<h3 className="text-xl font-semibold mb-3">
 Plan Tours
 </h3>
 
@@ -176,7 +104,86 @@ Organize cricket tours and connect with host clubs.
 
 </section>
 
-<footer className="bg-black text-white text-center py-6 mt-20">
+{/* MATCH BOARD PREVIEW */}
+
+<section className="py-20 bg-gray-50">
+
+<h2 className="text-3xl font-bold text-center mb-12">
+Match Board
+</h2>
+
+<div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6 px-6">
+
+<div className="bg-white p-6 rounded-xl shadow">
+
+<h3 className="font-bold text-lg">
+Bristol Indians CC
+</h3>
+
+<p className="text-gray-600">
+Looking for Friendly Match
+</p>
+
+<p className="text-sm text-gray-500 mt-2">
+Date: 12 Aug
+</p>
+
+<p className="text-sm text-gray-500">
+Format: T20
+</p>
+
+<p className="text-sm text-gray-500">
+Location: Bristol
+</p>
+
+</div>
+
+<div className="bg-white p-6 rounded-xl shadow">
+
+<h3 className="font-bold text-lg">
+Oxford Lions CC
+</h3>
+
+<p className="text-gray-600">
+Hosting Touring Team
+</p>
+
+<p className="text-sm text-gray-500 mt-2">
+Date: 20 Aug
+</p>
+
+<p className="text-sm text-gray-500">
+Format: 40 Overs
+</p>
+
+<p className="text-sm text-gray-500">
+Location: Oxford
+</p>
+
+</div>
+
+</div>
+
+</section>
+
+{/* CTA */}
+
+<section className="bg-[#0a2540] text-white py-20 text-center">
+
+<h2 className="text-3xl font-bold mb-6">
+Start Finding Matches Today
+</h2>
+
+<button
+onClick={signInWithGoogle}
+className="bg-blue-600 px-8 py-4 rounded-lg text-lg"
+>
+Sign in with Google
+</button>
+
+</section>
+
+<footer className="text-center py-8 text-gray-500">
 © 2026 CricTour
 </footer>
 
