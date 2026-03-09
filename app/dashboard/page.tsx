@@ -18,10 +18,25 @@ useEffect(()=>{
 
   if(!data.session){
    router.push("/")
-  }else{
-   setUserEmail(data.session.user.email ?? null)
-   setLoading(false)
+   return
   }
+
+  const user = data.session.user
+
+  // check if club profile exists
+
+  const { data:club } = await supabase
+   .from("clubs")
+   .select("*")
+   .eq("created_by", user.id)
+   .single()
+
+  if(!club){
+   router.push("/register-club")
+  }
+
+  setUserEmail(user.email ?? null)
+  setLoading(false)
 
  }
 
