@@ -2,17 +2,40 @@
 
 import Navbar from "@/components/Navbar"
 import { supabase } from "@/lib/supabase"
+import { useState } from "react"
 
 export default function Home() {
 
+const [showEmail,setShowEmail] = useState(false)
+const [email,setEmail] = useState("")
+const [password,setPassword] = useState("")
+
 async function googleLogin(){
 
+ const redirectUrl =
+  typeof window !== "undefined"
+   ? `${window.location.origin}/dashboard`
+   : "/dashboard"
+
  await supabase.auth.signInWithOAuth({
-  provider: "google",
-  options: {
-   redirectTo: "/dashboard"
-  }
+  provider:"google",
+  options:{ redirectTo: redirectUrl }
  })
+
+}
+
+async function emailSignup(){
+
+ const { error } = await supabase.auth.signUp({
+  email,
+  password
+ })
+
+ if(error){
+  alert(error.message)
+ }else{
+  alert("Check your email to confirm your account")
+ }
 
 }
 
@@ -20,7 +43,7 @@ return (
 
 <div>
 
-<Navbar />
+<Navbar/>
 
 {/* HERO */}
 
@@ -52,10 +75,42 @@ Continue with Google
 </div>
 
 <button
+onClick={()=>setShowEmail(!showEmail)}
 className="w-full border py-3 rounded-lg hover:bg-gray-100"
 >
 Register with Email
 </button>
+
+{showEmail && (
+
+<div className="mt-4 space-y-3">
+
+<input
+type="email"
+placeholder="Email"
+value={email}
+onChange={(e)=>setEmail(e.target.value)}
+className="w-full border rounded p-2"
+/>
+
+<input
+type="password"
+placeholder="Password"
+value={password}
+onChange={(e)=>setPassword(e.target.value)}
+className="w-full border rounded p-2"
+/>
+
+<button
+onClick={emailSignup}
+className="w-full bg-green-700 text-white py-2 rounded hover:bg-green-800"
+>
+Create Account
+</button>
+
+</div>
+
+)}
 
 </div>
 
