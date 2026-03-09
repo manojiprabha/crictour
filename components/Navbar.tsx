@@ -8,8 +8,10 @@ export default function Navbar({email}:{email?:string}){
 const router = useRouter()
 
 async function signOut(){
+
  await supabase.auth.signOut()
  router.push("/")
+
 }
 
 return(

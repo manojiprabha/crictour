@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
-:root {
-  --ct-green-dark: #0f3d2e;
-  --ct-green: #1f7a54;
-  --ct-gold: #f5c542;
-  --ct-bg: #f6f7f4;
+:root{
+ --ct-primary:#0f3d2e;
+ --ct-primary-light:#1f7a54;
+ --ct-accent:#f5c542;
+ --ct-bg:#f6f7f4;
 }
 
-body {
-  background: var(--ct-bg);
+body{
+ background:var(--ct-bg);
 }
