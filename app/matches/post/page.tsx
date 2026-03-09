@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
@@ -18,9 +18,41 @@ const [date,setDate] = useState("")
 const [description,setDescription] = useState("")
 const [email,setEmail] = useState("")
 
+useEffect(()=>{
+
+async function loadClub(){
+
+const { data:userData } = await supabase.auth.getUser()
+
+const user = userData?.user
+
+if(!user) return
+
+const { data:club } = await supabase
+.from("clubs")
+.select("*")
+.eq("created_by",user.id)
+.single()
+
+if(club){
+
+setClubName(club.club_name)
+setCity(club.city)
+
+}
+
+setEmail(user.email || "")
+
+}
+
+loadClub()
+
+},[])
+
 async function submitMatch(){
 
 await supabase.from("matches").insert({
+
 club_name:clubName,
 city,
 match_type:matchType,
@@ -28,6 +60,7 @@ format,
 match_date:date,
 description,
 contact_email:email
+
 })
 
 router.push("/matches")
@@ -53,17 +86,15 @@ Post Match
 <div className="space-y-4">
 
 <input
-placeholder="Club Name"
-className="w-full border p-2 rounded"
 value={clubName}
-onChange={(e)=>setClubName(e.target.value)}
+readOnly
+className="w-full border p-2 rounded bg-gray-100"
 />
 
 <input
-placeholder="City"
-className="w-full border p-2 rounded"
 value={city}
-onChange={(e)=>setCity(e.target.value)}
+readOnly
+className="w-full border p-2 rounded bg-gray-100"
 />
 
 <input
@@ -88,17 +119,16 @@ onChange={(e)=>setDate(e.target.value)}
 />
 
 <textarea
-placeholder="Description"
+placeholder="Match Details"
 className="w-full border p-2 rounded"
 value={description}
 onChange={(e)=>setDescription(e.target.value)}
 />
 
 <input
-placeholder="Contact Email"
-className="w-full border p-2 rounded"
 value={email}
-onChange={(e)=>setEmail(e.target.value)}
+readOnly
+className="w-full border p-2 rounded bg-gray-100"
 />
 
 <button
