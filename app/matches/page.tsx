@@ -6,41 +6,66 @@ import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
 import { useRouter } from "next/navigation"
 
-type Match = {
- id:string
- club_name:string
- city:string
- match_type:string
- match_date:string
- format:string
- description:string
- contact_email:string
-}
-
-export default function Matches(){
+export default function PostMatch(){
 
 const router = useRouter()
-const [matches,setMatches] = useState<Match[]>([])
-const [loading,setLoading] = useState(true)
+
+const [clubName,setClubName] = useState("")
+const [city,setCity] = useState("")
+const [matchType,setMatchType] = useState("")
+const [format,setFormat] = useState("")
+const [date,setDate] = useState("")
+const [description,setDescription] = useState("")
+const [email,setEmail] = useState("")
 
 useEffect(()=>{
 
-async function loadMatches(){
+async function loadClub(){
 
-const { data } = await supabase
-.from("matches")
+const { data:userData } = await supabase.auth.getUser()
+
+const user = userData?.user
+
+if(!user) return
+
+const { data:club } = await supabase
+.from("clubs")
 .select("*")
-.order("match_date",{ascending:true})
+.eq("created_by",user.id)
+.single()
 
-if(data) setMatches(data)
+if(club){
 
-setLoading(false)
+setClubName(club.club_name)
+setCity(club.city)
 
 }
 
-loadMatches()
+setEmail(user.email || "")
+
+}
+
+loadClub()
 
 },[])
+
+async function submitMatch(){
+
+await supabase.from("matches").insert({
+
+club_name:clubName,
+city,
+match_type:matchType,
+format,
+match_date:date,
+description,
+contact_email:email
+
+})
+
+router.push("/matches")
+
+}
 
 return(
 
@@ -52,62 +77,66 @@ return(
 
 <Sidebar/>
 
-<div className="flex-1 p-10">
+<div className="flex-1 p-10 max-w-xl">
 
-<div className="flex justify-between items-center mb-8">
-
-<h1 className="text-3xl font-bold">
-Match Board
+<h1 className="text-2xl font-bold mb-6">
+Post Match
 </h1>
 
+<div className="space-y-4">
+
+<input
+value={clubName}
+readOnly
+className="w-full border p-2 rounded bg-gray-100"
+/>
+
+<input
+value={city}
+readOnly
+className="w-full border p-2 rounded bg-gray-100"
+/>
+
+<input
+placeholder="Match Type (Friendly / Tour)"
+className="w-full border p-2 rounded"
+value={matchType}
+onChange={(e)=>setMatchType(e.target.value)}
+/>
+
+<input
+placeholder="Format (T20 / 40 overs)"
+className="w-full border p-2 rounded"
+value={format}
+onChange={(e)=>setFormat(e.target.value)}
+/>
+
+<input
+type="date"
+className="w-full border p-2 rounded"
+value={date}
+onChange={(e)=>setDate(e.target.value)}
+/>
+
+<textarea
+placeholder="Match Details"
+className="w-full border p-2 rounded"
+value={description}
+onChange={(e)=>setDescription(e.target.value)}
+/>
+
+<input
+value={email}
+readOnly
+className="w-full border p-2 rounded bg-gray-100"
+/>
+
 <button
-onClick={()=>router.push("/matches/post")}
-className="bg-emerald-600 text-white px-4 py-2 rounded-lg"
+onClick={submitMatch}
+className="bg-emerald-600 text-white px-4 py-2 rounded"
 >
-Post Match
+Submit Match
 </button>
-
-</div>
-
-{loading && <p>Loading matches...</p>}
-
-<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-{matches.map((match)=>(
-<div
-key={match.id}
-className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition"
->
-
-<h3 className="text-lg font-bold mb-2">
-{match.club_name}
-</h3>
-
-<p className="text-sm text-slate-500 mb-3">
-{match.city}
-</p>
-
-<div className="text-sm space-y-1">
-
-<p><strong>Type:</strong> {match.match_type}</p>
-<p><strong>Date:</strong> {match.match_date}</p>
-<p><strong>Format:</strong> {match.format}</p>
-
-</div>
-
-<p className="text-sm text-slate-600 mt-3">
-{match.description}
-</p>
-
-<button
-onClick={()=>router.push(`/matches/${match.id}`)}
-className="mt-4 text-emerald-600 text-sm font-semibold"
->
-Contact Club →
-</button>
-
-</div>
-))}
 
 </div>
 
