@@ -1,24 +1,28 @@
+"use client"
+
 import Navbar from "@/components/Navbar"
 import { supabase } from "@/lib/supabase"
 
-export default function Home(){
+export default function Home() {
 
 async function googleLogin(){
 
  await supabase.auth.signInWithOAuth({
-  provider:"google",
-  options:{
-   redirectTo:"/dashboard"
+  provider: "google",
+  options: {
+   redirectTo: "/dashboard"
   }
  })
 
 }
 
-return(
+return (
 
 <div>
 
-<Navbar/>
+<Navbar />
+
+{/* HERO */}
 
 <section className="bg-gradient-to-b from-[#0f3d2e] to-[#1f7a54] text-white py-24">
 
@@ -38,7 +42,7 @@ Find Friendly Cricket Matches & Plan Club Tours
 onClick={googleLogin}
 className="w-full bg-[#1f7a54] text-white py-3 rounded-lg font-semibold hover:bg-[#145c3e]"
 >
-Sign in with Google
+Continue with Google
 </button>
 
 <div className="flex items-center my-4">
@@ -58,3 +62,59 @@ Register with Email
 </div>
 
 </section>
+
+{/* PROBLEM */}
+
+<section className="py-20 text-center max-w-3xl mx-auto px-6">
+
+<h2 className="text-3xl font-bold mb-4">
+Why CricTour?
+</h2>
+
+<p className="text-gray-600 text-lg">
+Finding friendly matches or arranging cricket tours often relies on
+personal contacts, WhatsApp groups and manual coordination.
+</p>
+
+</section>
+
+{/* HOW IT WORKS */}
+
+<section className="bg-white py-20">
+
+<h2 className="text-3xl font-bold text-center mb-12">
+How CricTour Works
+</h2>
+
+<div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-8 px-6">
+
+<div className="p-6 rounded-xl shadow-sm border">
+<h3 className="font-semibold text-xl mb-2">Post a Match</h3>
+<p className="text-gray-600">
+Clubs can post friendly match requests or tour plans.
+</p>
+</div>
+
+<div className="p-6 rounded-xl shadow-sm border">
+<h3 className="font-semibold text-xl mb-2">Find Opponents</h3>
+<p className="text-gray-600">
+Browse clubs looking for matches in your area.
+</p>
+</div>
+
+<div className="p-6 rounded-xl shadow-sm border">
+<h3 className="font-semibold text-xl mb-2">Plan Tours</h3>
+<p className="text-gray-600">
+Organize cricket tours and connect with host clubs.
+</p>
+</div>
+
+</div>
+
+</section>
+
+</div>
+
+)
+
+}
