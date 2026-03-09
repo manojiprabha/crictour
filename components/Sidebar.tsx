@@ -1,55 +1,56 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 
 export default function Sidebar(){
 
 const router = useRouter()
+const pathname = usePathname()
+
+function NavItem({label, path, icon}:{label:string,path:string,icon:string}){
+
+const active = pathname === path
 
 return(
 
-<div className="w-60 bg-white border-r min-h-screen p-6">
+<button
+onClick={()=>router.push(path)}
+className={`flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg text-sm transition
+${active
+ ? "bg-emerald-50 text-emerald-700 font-semibold"
+ : "text-slate-600 hover:bg-slate-100"}
+`}
+>
 
-<h2 className="font-semibold mb-6 text-gray-600">
+<span className="text-lg">{icon}</span>
+
+{label}
+
+</button>
+
+)
+
+}
+
+return(
+
+<div className="w-64 bg-white border-r min-h-screen p-6">
+
+<h2 className="text-xs font-bold tracking-widest text-slate-400 mb-6 uppercase">
 Navigation
 </h2>
 
-<div className="space-y-4">
+<div className="space-y-2">
 
-<button
-onClick={()=>router.push("/dashboard")}
-className="block text-left w-full hover:text-green-700"
->
-Dashboard
-</button>
+<NavItem label="Dashboard" path="/dashboard" icon="🏠"/>
 
-<button
-onClick={()=>router.push("/matches")}
-className="block text-left w-full hover:text-green-700"
->
-Match Board
-</button>
+<NavItem label="Match Board" path="/matches" icon="🏏"/>
 
-<button
-onClick={()=>router.push("/clubs")}
-className="block text-left w-full hover:text-green-700"
->
-Clubs
-</button>
+<NavItem label="Clubs" path="/clubs" icon="👥"/>
 
-<button
-onClick={()=>router.push("/tours")}
-className="block text-left w-full hover:text-green-700"
->
-Tours
-</button>
+<NavItem label="Tours" path="/tours" icon="🚌"/>
 
-<button
-onClick={()=>router.push("/messages")}
-className="block text-left w-full hover:text-green-700"
->
-Messages
-</button>
+<NavItem label="Messages" path="/messages" icon="💬"/>
 
 </div>
 
