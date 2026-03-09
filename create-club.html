@@ -6,7 +6,7 @@
 <meta charset="UTF-8">
 <title>Create Club</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
 <style>
 
@@ -64,21 +64,10 @@ required
 
 <select name="role">
 
-<option value="Captain">
-Captain
-</option>
-
-<option value="Vice Captain">
-Vice Captain
-</option>
-
-<option value="Player">
-Player
-</option>
-
-<option value="Manager">
-Manager
-</option>
+<option value="Captain">Captain</option>
+<option value="Vice Captain">Vice Captain</option>
+<option value="Player">Player</option>
+<option value="Manager">Manager</option>
 
 </select>
 
@@ -100,10 +89,27 @@ Create Club
 
 <script>
 
-const supabase = window.supabase.createClient(
-"https://YOUR_PROJECT.supabase.co",
-"YOUR_PUBLIC_ANON_KEY"
+const { createClient } = supabase;
+
+const supabaseClient = createClient(
+"https://kzhziquvehjuagmjgnri.supabase.co",
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6aHppcXV2ZWhqdWFnbWpnbnJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNTkxNTgsImV4cCI6MjA4ODYzNTE1OH0.ctxzWUP0hii9NZpx5G2SAkfQRqWKfyA8t2UVXBahu-I"
 );
+
+
+// Check user login
+async function checkUser(){
+
+const { data } = await supabaseClient.auth.getSession();
+
+if(!data.session){
+window.location.href="/";
+}
+
+}
+
+checkUser();
+
 
 document
 .getElementById("clubForm")
@@ -118,11 +124,13 @@ const city=formData.get("city");
 const role=formData.get("role");
 const playCricket=formData.get("playCricket");
 
-const user =
-(await supabase.auth.getUser()).data.user;
+const { data:userData } =
+await supabaseClient.auth.getUser();
 
-const { data,error } =
-await supabase.from("clubs").insert({
+const user=userData.user;
+
+const { error } =
+await supabaseClient.from("clubs").insert({
 
 club_name:clubName,
 city:city,
@@ -139,6 +147,8 @@ alert(error.message);
 }else{
 
 alert("Club created successfully!");
+
+window.location.href="/dashboard.html";
 
 }
 
