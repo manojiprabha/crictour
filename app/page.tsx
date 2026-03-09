@@ -10,9 +10,14 @@ const [password,setPassword] = useState("")
 const [showEmail,setShowEmail] = useState(false)
 
 async function googleLogin(){
+
  await supabase.auth.signInWithOAuth({
-  provider:"google"
+  provider: "google",
+  options:{
+   redirectTo: "https://crictour.app/dashboard"
+  }
  })
+
 }
 
 async function emailSignup(){
