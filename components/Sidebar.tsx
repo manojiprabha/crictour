@@ -40,13 +40,17 @@ loadUnread(club.id)
 
 async function loadUnread(clubId:string){
 
-const { data } = await supabase
+const { count } = await supabase
 .from("messages")
-.select("id")
+.select("*",{count:"exact",head:true})
 .eq("to_club",clubId)
 .eq("is_read",false)
 
-setUnreadCount(data?.length || 0)
+if(count){
+setUnreadCount(count)
+}else{
+setUnreadCount(0)
+}
 
 }
 
@@ -76,9 +80,7 @@ table:"messages"
 const newMsg:any = payload.new
 
 if(newMsg.to_club === myClubId){
-
 setUnreadCount(prev => prev + 1)
-
 }
 
 }
@@ -100,15 +102,7 @@ const active = pathname === path
 return(
 
 <button
-onClick={()=>{
-
-if(label === "Messages"){
-setUnreadCount(0)
-}
-
-router.push(path)
-
-}}
+onClick={()=>router.push(path)}
 className={`flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-sm transition
 ${active
  ? "bg-emerald-50 text-emerald-700 font-semibold"
