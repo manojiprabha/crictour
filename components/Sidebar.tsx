@@ -11,7 +11,12 @@ export default function Sidebar() {
   const [myClubId, setMyClubId] = useState<string | null>(null)
 
   async function loadUnread(clubId: string) {
-    const { data } = await supabase.from("messages").select("id").eq("to_club", clubId).eq("is_read", false)
+    const { data } = await supabase
+      .from("messages")
+      .select("id")
+      .eq("to_club", clubId)
+      .eq("is_read", false)
+    
     setUnreadCount(data?.length || 0)
   }
 
@@ -20,19 +25,21 @@ export default function Sidebar() {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData?.user) return
       const { data: club } = await supabase.from("clubs").select("id").eq("created_by", userData.user.id).single()
-      if (club) { setMyClubId(club.id); loadUnread(club.id); }
+      if (club) {
+        setMyClubId(club.id)
+        loadUnread(club.id)
+      }
     }
     init()
   }, [])
 
-  /* FIX: Listen to "*" (all changes) to catch UPDATE events */
+  // FIX: Catch BOTH new messages and updates (read status)
   useEffect(() => {
     if (!myClubId) return
-    const channel = supabase.channel("messages-notifications")
+    const channel = supabase.channel("sidebar-notifications")
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, (payload) => {
-        const newMsg: any = payload.new
-        const oldMsg: any = payload.old
-        if (newMsg?.to_club === myClubId || oldMsg?.to_club === myClubId) {
+        // If message is TO us (INSERT) or was for us (UPDATE)
+        if ((payload.new as any)?.to_club === myClubId || (payload.old as any)?.to_club === myClubId) {
           loadUnread(myClubId)
         }
       }).subscribe()
@@ -50,14 +57,14 @@ export default function Sidebar() {
           <span>{label}</span>
         </div>
         {label === "Messages" && unreadCount > 0 && (
-          <span className="text-xs bg-red-500 text-white px-2 py-1 rounded-full">{unreadCount}</span>
+          <span className="text-xs bg-red-500 text-white px-2 py-1 rounded-full font-bold">{unreadCount}</span>
         )}
       </button>
     )
   }
 
   return (
-    <div className="w-64 bg-white border-r min-h-screen p-6 shadow-sm">
+    <div className="w-64 bg-white border-r h-full p-6 flex flex-col shadow-sm">
       <h2 className="text-xs font-bold tracking-widest text-slate-400 mb-6 uppercase">Navigation</h2>
       <div className="space-y-2">
         <NavItem label="Dashboard" path="/dashboard" icon="🏠" />
