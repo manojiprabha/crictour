@@ -56,12 +56,12 @@ const { data } = await supabase
 .from("match_interests")
 .select(`
 club_id,
-clubs (
+clubs!match_interests_club_id_fkey (
 club_name,
 city
 )
 `)
-.eq("match_id",matchId)
+.eq("match_id", matchId)
 
 if(data){
 setInterests(data)
