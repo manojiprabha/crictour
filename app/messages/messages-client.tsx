@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { supabase } from "@/lib/supabase"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
@@ -34,6 +34,7 @@ const matchId = params.get("match")
 const [messages,setMessages] = useState<Message[]>([])
 const [conversations,setConversations] = useState<Message[]>([])
 const [newMessage,setNewMessage] = useState("")
+const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 const [myClubId,setMyClubId] = useState<string | null>(null)
 const [loading,setLoading] = useState(true)
 
@@ -147,6 +148,9 @@ return
 }
 
 setNewMessage("")
+if(textareaRef.current){
+textareaRef.current.style.height = "auto"
+}
 
 const { data } = await supabase
 .from("messages")
@@ -347,8 +351,18 @@ msg.from_club === myClubId
 <div className="flex gap-2">
 
 <textarea
+ref={textareaRef}
 value={newMessage}
-onChange={(e)=>setNewMessage(e.target.value)}
+onChange={(e)=>{
+
+setNewMessage(e.target.value)
+
+if(textareaRef.current){
+textareaRef.current.style.height = "auto"
+textareaRef.current.style.height = textareaRef.current.scrollHeight + "px"
+}
+
+}}
 onKeyDown={(e)=>{
 if(e.key === "Enter" && !e.shiftKey){
 e.preventDefault()
@@ -357,7 +371,7 @@ sendMessage()
 }}
 placeholder="Type message..."
 rows={1}
-className="flex-1 border rounded-lg p-3 resize-none"
+className="flex-1 border rounded-lg p-3 resize-none overflow-hidden"
 />
 
 <button
