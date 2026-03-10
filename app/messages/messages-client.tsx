@@ -23,6 +23,7 @@ type Message = {
     club_name: string
   }
 }
+
 export default function MessagesClient(){
 
 const params = useSearchParams()
@@ -34,11 +35,10 @@ const matchId = params.get("match")
 const [messages,setMessages] = useState<Message[]>([])
 const [conversations,setConversations] = useState<Message[]>([])
 const [newMessage,setNewMessage] = useState("")
-const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 const [myClubId,setMyClubId] = useState<string | null>(null)
 const [loading,setLoading] = useState(true)
 
-const [tab,setTab] = useState<"inbox" | "sent">("inbox")
+const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
 useEffect(()=>{
 
@@ -76,7 +76,11 @@ async function loadMessages(){
 
 const { data } = await supabase
 .from("messages")
-.select("*")
+.select(`
+  *,
+  fromClub:clubs!messages_from_club_fkey (club_name),
+  toClub:clubs!messages_to_club_fkey (club_name)
+`)
 .eq("match_id",matchId)
 .order("created_at",{ascending:true})
 
@@ -85,10 +89,10 @@ setMessages(data)
 
 await supabase
 .from("messages")
-.update({ is_read: true })
-.eq("match_id", matchId)
-.eq("to_club", myClubId)
-.eq("is_read", false)
+.update({is_read:true})
+.eq("match_id",matchId)
+.eq("to_club",myClubId)
+.eq("is_read",false)
 
 }
 
@@ -107,6 +111,7 @@ const { data } = await supabase
 `)
 .or(`from_club.eq.${clubId},to_club.eq.${clubId}`)
 .order("created_at",{ascending:false})
+
 if(data){
 
 const unique:any = {}
@@ -139,7 +144,8 @@ const { error } = await supabase
 match_id:matchId,
 from_club:myClubId,
 to_club:clubId,
-message:newMessage
+message:newMessage,
+is_read:false
 })
 
 if(error){
@@ -148,13 +154,18 @@ return
 }
 
 setNewMessage("")
+
 if(textareaRef.current){
 textareaRef.current.style.height = "auto"
 }
 
 const { data } = await supabase
 .from("messages")
-.select("*")
+.select(`
+  *,
+  fromClub:clubs!messages_from_club_fkey (club_name),
+  toClub:clubs!messages_to_club_fkey (club_name)
+`)
 .eq("match_id",matchId)
 .order("created_at",{ascending:true})
 
@@ -166,13 +177,11 @@ setMessages(data)
 
 
 if(loading){
-
 return(
 <div className="p-10">
 Loading...
 </div>
 )
-
 }
 
 
@@ -188,7 +197,6 @@ return(
 
 <div className="flex-1 p-10 max-w-2xl">
 
-
 {/* Conversation List */}
 
 {!matchId && (
@@ -199,53 +207,16 @@ return(
 Messages
 </h1>
 
-
-{/* Inbox / Sent Tabs */}
-
-<div className="flex gap-3 mb-6">
-
-<button
-onClick={()=>setTab("inbox")}
-className={`px-4 py-2 rounded-lg font-semibold ${
-tab === "inbox"
-? "bg-emerald-600 text-white"
-: "bg-gray-200"
-}`}
->
-Inbox
-</button>
-
-<button
-onClick={()=>setTab("sent")}
-className={`px-4 py-2 rounded-lg font-semibold ${
-tab === "sent"
-? "bg-emerald-600 text-white"
-: "bg-gray-200"
-}`}
->
-Sent
-</button>
-
-</div>
-
-
 <div className="space-y-4">
 
-{conversations
-.filter((conv)=>{
-
-// inbox = someone started conversation with me
-if(tab === "inbox"){
-return conv.from_club !== myClubId
-}
-
-// sent = I started the conversation
-return conv.from_club === myClubId
-
-})
-.map((conv)=>{
+{conversations.map((conv)=>{
 
 const otherClub =
+conv.from_club === myClubId
+? conv.toClub?.club_name
+: conv.fromClub?.club_name
+
+const otherClubId =
 conv.from_club === myClubId
 ? conv.to_club
 : conv.from_club
@@ -254,7 +225,7 @@ return(
 
 <div
 key={conv.id}
-onClick={()=>router.push(`/messages?club=${otherClub}&match=${conv.match_id}`)}
+onClick={()=>router.push(`/messages?club=${otherClubId}&match=${conv.match_id}`)}
 className={`border rounded-lg p-4 cursor-pointer hover:bg-gray-50 ${
 !conv.is_read && conv.to_club === myClubId
 ? "bg-emerald-50 border-emerald-400"
@@ -262,13 +233,11 @@ className={`border rounded-lg p-4 cursor-pointer hover:bg-gray-50 ${
 }`}
 >
 
-<div className="flex items-center gap-2">
+<div className="flex items-center justify-between">
 
 <p className="font-semibold">
 
-{tab === "inbox"
-? conv.fromClub?.club_name
-: conv.toClub?.club_name}
+{otherClub}
 
 </p>
 
@@ -281,6 +250,7 @@ New
 )}
 
 </div>
+
 <p className={`text-sm truncate ${
 !conv.is_read && conv.to_club === myClubId
 ? "font-semibold text-slate-900"
@@ -300,7 +270,6 @@ New
 </>
 
 )}
-
 
 
 {/* Chat Window */}
