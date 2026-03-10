@@ -46,11 +46,15 @@ Navigation
 
 <NavItem label="Match Board" path="/matches" icon="🏏"/>
 
+<NavItem label="My Matches" path="/my-matches" icon="📅"/>
+
 <NavItem label="Clubs" path="/clubs" icon="👥"/>
 
 <NavItem label="Tours" path="/tours" icon="🚌"/>
 
 <NavItem label="Messages" path="/messages" icon="💬"/>
+
+<NavItem label="Club Profile" path="/profile" icon="⚙️"/>
 
 </div>
 
