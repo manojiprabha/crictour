@@ -14,14 +14,8 @@ type Message = {
   match_id: string
   created_at: string
   is_read: boolean
-
-  fromClub?: {
-    club_name: string
-  }
-
-  toClub?: {
-    club_name: string
-  }
+  fromClub?: { club_name: string }
+  toClub?: { club_name: string }
 }
 
 export default function MessagesClient(){
@@ -41,6 +35,9 @@ const [loading,setLoading] = useState(true)
 
 const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 const bottomRef = useRef<HTMLDivElement | null>(null)
+
+
+/* ---------------- INIT ---------------- */
 
 useEffect(()=>{
 
@@ -65,16 +62,22 @@ setMyClubId(club.id)
 }
 
 if(matchId){
-await loadMessages()
+await loadMessages(club?.id)
 }else{
 await loadConversations(club?.id)
 }
 
 setLoading(false)
-
 }
 
-async function loadMessages(){
+init()
+
+},[matchId])
+
+
+/* ---------------- LOAD CHAT ---------------- */
+
+async function loadMessages(currentClubId:any){
 
 const { data } = await supabase
 .from("messages")
@@ -86,15 +89,17 @@ const { data } = await supabase
 .eq("match_id",matchId)
 .order("created_at",{ascending:true})
 
-if(data){
+if(!data) return
 
 setMessages(data)
+
+/* Determine chat partner */
 
 if(data.length > 0){
 
 const firstMsg = data[0]
 
-if(firstMsg.from_club === myClubId){
+if(firstMsg.from_club === currentClubId){
 setChatClubName(firstMsg.toClub?.club_name || "")
 }else{
 setChatClubName(firstMsg.fromClub?.club_name || "")
@@ -102,16 +107,19 @@ setChatClubName(firstMsg.fromClub?.club_name || "")
 
 }
 
+/* mark messages as read */
+
 await supabase
 .from("messages")
 .update({is_read:true})
 .eq("match_id",matchId)
-.eq("to_club",myClubId)
+.eq("to_club",currentClubId)
 .eq("is_read",false)
 
 }
 
-}
+
+/* ---------------- LOAD CONVERSATIONS ---------------- */
 
 async function loadConversations(clubId:any){
 
@@ -127,7 +135,7 @@ const { data } = await supabase
 .or(`from_club.eq.${clubId},to_club.eq.${clubId}`)
 .order("created_at",{ascending:false})
 
-if(data){
+if(!data) return
 
 const unique:any = {}
 
@@ -141,12 +149,12 @@ setConversations(Object.values(unique))
 
 }
 
-}
 
-init()
+/* ---------------- REALTIME ---------------- */
 
+useEffect(()=>{
 
-/* REALTIME LISTENER */
+if(!myClubId) return
 
 const channel = supabase
 .channel("messages-realtime")
@@ -161,9 +169,13 @@ table:"messages"
 
 const newMsg = payload.new as Message
 
+/* update open chat */
+
 if(newMsg.match_id === matchId){
 setMessages(prev => [...prev,newMsg])
 }
+
+/* update conversation preview */
 
 setConversations(prev=>{
 
@@ -183,31 +195,40 @@ return [newMsg,...prev]
 )
 .subscribe()
 
-
 return ()=>{
-
 supabase.removeChannel(channel)
-
 }
 
-},[matchId])
+},[matchId,myClubId])
 
 
-
-/* AUTO SCROLL */
+/* ---------------- AUTO SCROLL ---------------- */
 
 useEffect(()=>{
-
 bottomRef.current?.scrollIntoView({behavior:"smooth"})
-
 },[messages])
 
 
+/* ---------------- SEND MESSAGE ---------------- */
 
 async function sendMessage(){
 
 if(!newMessage.trim()) return
 if(!clubId || !matchId || !myClubId) return
+
+const tempMessage:Message = {
+id: Date.now().toString(),
+message:newMessage,
+from_club:myClubId,
+to_club:clubId,
+match_id:matchId,
+created_at:new Date().toISOString(),
+is_read:false
+}
+
+/* show instantly */
+
+setMessages(prev=>[...prev,tempMessage])
 
 const { error } = await supabase
 .from("messages")
@@ -233,17 +254,11 @@ textareaRef.current.style.height="auto"
 }
 
 
+/* ---------------- UI ---------------- */
 
 if(loading){
-
-return(
-<div className="p-10">
-Loading...
-</div>
-)
-
+return <div className="p-10">Loading...</div>
 }
-
 
 
 return(
@@ -258,15 +273,13 @@ return(
 
 <div className="flex-1 p-10 max-w-2xl">
 
-{/* CONVERSATION LIST */}
+{/* Conversations */}
 
 {!matchId && (
 
 <>
 
-<h1 className="text-2xl font-bold mb-6">
-Messages
-</h1>
+<h1 className="text-2xl font-bold mb-6">Messages</h1>
 
 <div className="space-y-4">
 
@@ -294,20 +307,14 @@ className={`border rounded-lg p-4 cursor-pointer hover:bg-gray-50 ${
 }`}
 >
 
-<div className="flex items-center justify-between">
+<div className="flex justify-between">
 
-<p className="font-semibold">
-
-{otherClub}
-
-</p>
+<p className="font-semibold">{otherClub}</p>
 
 {!conv.is_read && conv.to_club === myClubId && (
-
 <span className="text-xs bg-red-500 text-white px-2 py-1 rounded-full">
 New
 </span>
-
 )}
 
 </div>
@@ -333,8 +340,7 @@ New
 )}
 
 
-
-{/* CHAT WINDOW */}
+/* Chat window */
 
 {matchId && (
 
@@ -349,22 +355,13 @@ className="px-3 py-1 bg-gray-200 rounded-lg text-sm hover:bg-gray-300"
 ← Back
 </button>
 
-<h1 className="text-2xl font-bold">
-{chatClubName}
-</h1>
+<h1 className="text-2xl font-bold">{chatClubName}</h1>
 
 </div>
 
 <div className="bg-white border rounded-xl p-6 mb-6 h-[420px] overflow-y-auto">
 
-{messages.length === 0 && (
-<p className="text-slate-500">
-No messages yet. Start the conversation.
-</p>
-)}
-
 {messages.map((msg)=>(
-
 <div
 key={msg.id}
 className={`mb-4 ${
@@ -373,7 +370,6 @@ msg.from_club === myClubId
 : "text-left"
 }`}
 >
-
 <div
 className={`inline-block px-4 py-2 rounded-lg max-w-[70%] ${
 msg.from_club === myClubId
@@ -381,13 +377,9 @@ msg.from_club === myClubId
 : "bg-gray-200 text-slate-800"
 }`}
 >
-
 {msg.message}
-
 </div>
-
 </div>
-
 ))}
 
 <div ref={bottomRef}></div>

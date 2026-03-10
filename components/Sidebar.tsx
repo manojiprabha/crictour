@@ -13,7 +13,7 @@ const [unreadCount,setUnreadCount] = useState(0)
 const [myClubId,setMyClubId] = useState<string | null>(null)
 
 
-/* Load unread messages from database */
+/* ---------------- LOAD UNREAD ---------------- */
 
 async function loadUnread(clubId:string){
 
@@ -28,6 +28,7 @@ setUnreadCount(data?.length || 0)
 }
 
 
+/* ---------------- INITIAL LOAD ---------------- */
 
 useEffect(()=>{
 
@@ -58,7 +59,7 @@ init()
 
 
 
-/* Realtime listener */
+/* ---------------- REALTIME LISTENER ---------------- */
 
 useEffect(()=>{
 
@@ -79,7 +80,7 @@ const newMsg:any = payload.new
 
 if(newMsg.to_club === myClubId){
 
-// recalculate unread messages properly
+/* recalculate unread count */
 loadUnread(myClubId)
 
 }
@@ -95,6 +96,22 @@ supabase.removeChannel(channel)
 },[myClubId])
 
 
+
+/* ---------------- REFRESH WHEN OPENING MESSAGES ---------------- */
+
+useEffect(()=>{
+
+if(pathname === "/messages" && myClubId){
+
+loadUnread(myClubId)
+
+}
+
+},[pathname,myClubId])
+
+
+
+/* ---------------- NAV ITEM ---------------- */
 
 function NavItem({label, path, icon}:{label:string,path:string,icon:string}){
 
@@ -135,6 +152,7 @@ ${active
 }
 
 
+/* ---------------- UI ---------------- */
 
 return(
 
