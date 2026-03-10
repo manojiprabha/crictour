@@ -1,52 +1,68 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 
-export default function Navbar({email}:{email?:string}){
+export default function Navbar(){
 
 const router = useRouter()
 
+const [email,setEmail] = useState<string | null>(null)
+
+useEffect(()=>{
+
+async function loadUser(){
+
+const { data } = await supabase.auth.getUser()
+
+if(data?.user){
+
+setEmail(data.user.email || null)
+
+}
+
+}
+
+loadUser()
+
+},[])
+
 async function signOut(){
 
- await supabase.auth.signOut()
- router.push("/")
+await supabase.auth.signOut()
+
+router.push("/")
 
 }
 
 return(
 
-<div className="bg-[#0f3d2e] text-white">
+<div className="w-full bg-[#12372A] text-white px-8 py-4 flex justify-between items-center">
 
-<div className="max-w-6xl mx-auto flex items-center justify-between py-4 px-6">
-
-<h1
+<div
+className="font-bold text-lg cursor-pointer"
 onClick={()=>router.push("/dashboard")}
-className="text-2xl font-bold cursor-pointer"
 >
 🏏 CricTour
-</h1>
+</div>
 
-<div className="flex items-center gap-6">
+<div className="flex items-center gap-4">
 
 {email && (
-<span className="text-sm opacity-80">
+
+<span className="text-sm text-emerald-100">
 {email}
 </span>
-)}
 
-{email && (
+)}
 
 <button
 onClick={signOut}
-className="bg-red-500 px-4 py-2 rounded hover:bg-red-600"
+className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm"
 >
 Sign Out
 </button>
-
-)}
-
-</div>
 
 </div>
 

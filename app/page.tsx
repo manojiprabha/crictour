@@ -2,12 +2,30 @@
 
 import Navbar from "@/components/Navbar"
 import { supabase } from "@/lib/supabase"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 export default function Home() {
   const [showEmail, setShowEmail] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+
+  useEffect(()=>{
+
+async function checkSession(){
+
+const { data } = await supabase.auth.getSession()
+
+if(data.session){
+
+window.location.href = "/dashboard"
+
+}
+
+}
+
+checkSession()
+
+},[])
 
   async function googleLogin() {
     const redirectUrl = typeof window !== "undefined" ? `${window.location.origin}/dashboard` : "/dashboard"
