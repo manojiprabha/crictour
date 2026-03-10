@@ -4,24 +4,27 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 
 type Message = {
   id: string
   message: string
   from_club: string
   to_club: string
+  match_id: string
   created_at: string
 }
 
 export default function MessagesClient(){
 
 const params = useSearchParams()
+const router = useRouter()
 
 const clubId = params.get("club")
 const matchId = params.get("match")
 
 const [messages,setMessages] = useState<Message[]>([])
+const [conversations,setConversations] = useState<any[]>([])
 const [newMessage,setNewMessage] = useState("")
 const [myClubId,setMyClubId] = useState<string | null>(null)
 const [loading,setLoading] = useState(true)
@@ -31,7 +34,6 @@ useEffect(()=>{
 async function init(){
 
 const { data:userData } = await supabase.auth.getUser()
-
 const user = userData?.user
 
 if(!user){
@@ -49,15 +51,17 @@ if(club){
 setMyClubId(club.id)
 }
 
+if(matchId){
 await loadMessages()
+}else{
+await loadConversations()
+}
 
 setLoading(false)
 
 }
 
 async function loadMessages(){
-
-if(!matchId) return
 
 const { data } = await supabase
 .from("messages")
@@ -71,9 +75,35 @@ setMessages(data)
 
 }
 
+async function loadConversations(){
+
+if(!myClubId) return
+
+const { data } = await supabase
+.from("messages")
+.select("*")
+.or(`from_club.eq.${myClubId},to_club.eq.${myClubId}`)
+.order("created_at",{ascending:false})
+
+if(data){
+
+const uniqueMatches:any = {}
+
+data.forEach((msg)=>{
+if(!uniqueMatches[msg.match_id]){
+uniqueMatches[msg.match_id] = msg
+}
+})
+
+setConversations(Object.values(uniqueMatches))
+
+}
+
+}
+
 init()
 
-},[matchId])
+},[matchId,myClubId])
 
 async function sendMessage(){
 
@@ -108,43 +138,11 @@ setMessages(data)
 
 }
 
-if(!clubId || !matchId){
-
-return(
-
-<div className="min-h-screen bg-slate-50">
-
-<Navbar/>
-
-<div className="flex">
-
-<Sidebar/>
-
-<div className="flex-1 p-10">
-
-<h1 className="text-2xl font-bold mb-4">
-Messages
-</h1>
-
-<p className="text-slate-500">
-Open a conversation from a match page.
-</p>
-
-</div>
-
-</div>
-
-</div>
-
-)
-
-}
-
 if(loading){
 
 return(
 <div className="p-10">
-Loading conversation...
+Loading...
 </div>
 )
 
@@ -161,6 +159,65 @@ return(
 <Sidebar/>
 
 <div className="flex-1 p-10 max-w-2xl">
+
+{/* Conversation List */}
+
+{!matchId && (
+
+<>
+
+<h1 className="text-2xl font-bold mb-6">
+Messages
+</h1>
+
+{conversations.length === 0 && (
+<p className="text-slate-500">
+No conversations yet.
+</p>
+)}
+
+<div className="space-y-4">
+
+{conversations.map((conv)=>{
+
+const otherClub =
+conv.from_club === myClubId
+? conv.to_club
+: conv.from_club
+
+return(
+
+<div
+key={conv.id}
+onClick={()=>router.push(`/messages?club=${otherClub}&match=${conv.match_id}`)}
+className="bg-white border rounded-lg p-4 cursor-pointer hover:bg-gray-50"
+>
+
+<p className="font-semibold">
+Conversation
+</p>
+
+<p className="text-sm text-slate-500 truncate">
+{conv.message}
+</p>
+
+</div>
+
+)
+
+})}
+
+</div>
+
+</>
+
+)}
+
+{/* Chat Window */}
+
+{matchId && (
+
+<>
 
 <h1 className="text-2xl font-bold mb-6">
 Match Conversation
@@ -220,6 +277,10 @@ Send
 </button>
 
 </div>
+
+</>
+
+)}
 
 </div>
 
