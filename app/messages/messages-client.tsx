@@ -13,8 +13,15 @@ type Message = {
   to_club: string
   match_id: string
   created_at: string
-}
 
+  fromClub?: {
+    club_name: string
+  }
+
+  toClub?: {
+    club_name: string
+  }
+}
 export default function MessagesClient(){
 
 const params = useSearchParams()
