@@ -6,66 +6,78 @@ import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
 import { useRouter } from "next/navigation"
 
-export default function PostMatch(){
+type Match = {
+ id:string
+ club_name:string
+ city:string
+ match_type:string
+ format:string
+ match_date:string
+ description:string
+}
+
+export default function MatchesPage(){
 
 const router = useRouter()
-
-const [clubName,setClubName] = useState("")
-const [city,setCity] = useState("")
-const [matchType,setMatchType] = useState("")
-const [format,setFormat] = useState("")
-const [date,setDate] = useState("")
-const [description,setDescription] = useState("")
-const [email,setEmail] = useState("")
+const [matches,setMatches] = useState<Match[]>([])
 
 useEffect(()=>{
 
-async function loadClub(){
+async function loadMatches(){
 
-const { data:userData } = await supabase.auth.getUser()
-
-const user = userData?.user
-
-if(!user) return
-
-const { data:club } = await supabase
-.from("clubs")
+const { data } = await supabase
+.from("matches")
 .select("*")
-.eq("created_by",user.id)
-.single()
+.order("match_date",{ascending:true})
 
-if(club){
-
-setClubName(club.club_name)
-setCity(club.city)
+if(data){
+setMatches(data)
+}
 
 }
 
-setEmail(user.email || "")
-
-}
-
-loadClub()
+loadMatches()
 
 },[])
 
-async function submitMatch(){
 
-await supabase.from("matches").insert({
+async function expressInterest(matchId:string){
 
-club_name:clubName,
-city,
-match_type:matchType,
-format,
-match_date:date,
-description,
-contact_email:email
+const { data:userData } = await supabase.auth.getUser()
+const user = userData?.user
 
+if(!user){
+alert("Login required")
+return
+}
+
+const { data:club } = await supabase
+.from("clubs")
+.select("id")
+.eq("created_by",user.id)
+.single()
+
+if(!club){
+alert("Club not found")
+return
+}
+
+const { error } = await supabase
+.from("match_interests")
+.insert({
+match_id:matchId,
+club_id:club.id
 })
 
-router.push("/matches")
+if(error){
+alert(error.message)
+return
+}
+
+alert("Interest sent!")
 
 }
+
 
 return(
 
@@ -77,66 +89,58 @@ return(
 
 <Sidebar/>
 
-<div className="flex-1 p-10 max-w-xl">
+<div className="flex-1 p-10">
 
-<h1 className="text-2xl font-bold mb-6">
-Post Match
+<h1 className="text-3xl font-bold mb-8">
+Match Board
 </h1>
 
-<div className="space-y-4">
+<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-<input
-value={clubName}
-readOnly
-className="w-full border p-2 rounded bg-gray-100"
-/>
+{matches.map((match)=>(
 
-<input
-value={city}
-readOnly
-className="w-full border p-2 rounded bg-gray-100"
-/>
+<div
+key={match.id}
+className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition"
+>
 
-<input
-placeholder="Match Type (Friendly / Tour)"
-className="w-full border p-2 rounded"
-value={matchType}
-onChange={(e)=>setMatchType(e.target.value)}
-/>
+<h3 className="text-lg font-bold mb-2">
+{match.club_name}
+</h3>
 
-<input
-placeholder="Format (T20 / 40 overs)"
-className="w-full border p-2 rounded"
-value={format}
-onChange={(e)=>setFormat(e.target.value)}
-/>
+<p className="text-sm text-slate-500 mb-1">
+{match.city}
+</p>
 
-<input
-type="date"
-className="w-full border p-2 rounded"
-value={date}
-onChange={(e)=>setDate(e.target.value)}
-/>
+<p className="text-sm text-slate-500 mb-2">
+{match.match_date} • {match.format}
+</p>
 
-<textarea
-placeholder="Match Details"
-className="w-full border p-2 rounded"
-value={description}
-onChange={(e)=>setDescription(e.target.value)}
-/>
+<p className="text-sm text-slate-600 mb-4">
+{match.description}
+</p>
 
-<input
-value={email}
-readOnly
-className="w-full border p-2 rounded bg-gray-100"
-/>
+<div className="flex gap-2">
 
 <button
-onClick={submitMatch}
-className="bg-emerald-600 text-white px-4 py-2 rounded"
+onClick={()=>router.push(`/matches/${match.id}`)}
+className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-50"
 >
-Submit Match
+View
 </button>
+
+<button
+onClick={()=>expressInterest(match.id)}
+className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700"
+>
+I'm Interested
+</button>
+
+</div>
+
+</div>
+
+))}
 
 </div>
 
