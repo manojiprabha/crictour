@@ -21,7 +21,7 @@ type InterestedClub = {
  clubs:{
   club_name:string
   city:string
- }
+ }[]
 }
 
 export default function MatchDetail(){
@@ -74,21 +74,16 @@ loadInterests()
 
 },[matchId])
 
-
 function openMessage(clubId:string){
-
 router.push(`/messages?club=${clubId}&match=${matchId}`)
-
 }
 
 if(!match){
-
 return(
 <div className="p-10">
 Loading match...
 </div>
 )
-
 }
 
 return(
@@ -133,42 +128,50 @@ Interested Clubs
 </h2>
 
 {interests.length === 0 && (
-
 <p className="text-slate-500">
 No clubs have shown interest yet.
 </p>
-
 )}
 
 <div className="space-y-4">
 
-{interests.map((club)=>(
+{interests.map((interest)=>{
+
+const club = interest.clubs?.[0]
+
+if(!club) return null
+
+return(
+
 <div
-key={club.club_id}
+key={interest.club_id}
 className="bg-white border rounded-lg p-4 flex justify-between items-center"
 >
 
 <div>
 
 <p className="font-semibold">
-{club.clubs.club_name}
+{club.club_name}
 </p>
 
 <p className="text-sm text-slate-500">
-{club.clubs.city}
+{club.city}
 </p>
 
 </div>
 
 <button
-onClick={()=>openMessage(club.club_id)}
+onClick={()=>openMessage(interest.club_id)}
 className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700"
 >
 Message
 </button>
 
 </div>
-))}
+
+)
+
+})}
 
 </div>
 
