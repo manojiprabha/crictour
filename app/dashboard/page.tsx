@@ -19,10 +19,35 @@ export default function Dashboard(){
 const router = useRouter()
 
 const [matches,setMatches] = useState<Match[]>([])
+const [checkingClub,setCheckingClub] = useState(true)
 
 useEffect(()=>{
 
-async function loadMatches(){
+async function initDashboard(){
+
+const { data:userData } = await supabase.auth.getUser()
+
+const user = userData?.user
+
+if(!user){
+router.push("/")
+return
+}
+
+const { data:club } = await supabase
+.from("clubs")
+.select("*")
+.eq("created_by",user.id)
+.single()
+
+// if no club → go to register page
+
+if(!club){
+router.push("/registerclub")
+return
+}
+
+// load matches feed
 
 const { data } = await supabase
 .from("matches")
@@ -31,16 +56,17 @@ const { data } = await supabase
 .limit(4)
 
 if(data){
-
 setMatches(data)
+}
+
+setCheckingClub(false)
 
 }
 
-}
-
-loadMatches()
+initDashboard()
 
 },[])
+
 
 function ActionCard({
 title,
@@ -80,6 +106,17 @@ Open →
 
 )
 
+}
+
+
+// prevent page flicker while checking club
+
+if(checkingClub){
+return(
+<div className="p-10">
+Loading dashboard...
+</div>
+)
 }
 
 return(
