@@ -4,183 +4,221 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
-import { useParams, useRouter } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 
-type Match = {
- id:string
- club_name:string
- city:string
- match_type:string
- format:string
- match_date:string
- description:string
+type Message = {
+  id: string
+  message: string
+  from_club: string
+  to_club: string
+  created_at: string
 }
 
-type InterestedClub = {
- club_id:string
- clubs:{
-  club_name:string
-  city:string
- }[]
-}
+export default function MessagesPage() {
 
-export default function MatchDetail(){
+  const params = useSearchParams()
 
-const params = useParams()
-const router = useRouter()
+  const clubId = params.get("club")
+  const matchId = params.get("match")
 
-const matchId = params.id as string
+  const [messages, setMessages] = useState<Message[]>([])
+  const [newMessage, setNewMessage] = useState("")
+  const [myClubId, setMyClubId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
-const [match,setMatch] = useState<Match | null>(null)
-const [interests,setInterests] = useState<InterestedClub[]>([])
+  useEffect(() => {
 
-useEffect(()=>{
+    async function init() {
 
-async function loadMatch(){
+      const { data:userData } = await supabase.auth.getUser()
+      const user = userData?.user
 
-const { data } = await supabase
-.from("matches")
-.select("*")
-.eq("id",matchId)
-.single()
+      if(!user){
+        setLoading(false)
+        return
+      }
 
-if(data){
-setMatch(data)
-}
+      const { data:club } = await supabase
+        .from("clubs")
+        .select("id")
+        .eq("created_by", user.id)
+        .single()
 
-}
+      if(club){
+        setMyClubId(club.id)
+      }
 
-async function loadInterests(){
+      await loadMessages()
 
-const { data } = await supabase
-.from("match_interests")
-.select(`
-club_id,
-clubs (
-club_name,
-city
-)
-`)
-.eq("match_id",matchId)
+      setLoading(false)
+    }
 
-if(data){
-setInterests(data)
-}
+    async function loadMessages(){
 
-}
+      if(!matchId) return
 
-loadMatch()
-loadInterests()
+      const { data } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("match_id", matchId)
+        .order("created_at",{ ascending:true })
 
-},[matchId])
+      if(data){
+        setMessages(data)
+      }
 
-function openMessage(clubId:string){
-router.push(`/messages?club=${clubId}&match=${matchId}`)
-}
+    }
 
-if(!match){
-return(
-<div className="p-10">
-Loading match...
-</div>
-)
-}
+    init()
 
-return(
-
-<div className="min-h-screen bg-slate-50">
-
-<Navbar/>
-
-<div className="flex">
-
-<Sidebar/>
-
-<div className="flex-1 p-10 max-w-3xl">
-
-<h1 className="text-3xl font-bold mb-6">
-{match.club_name}
-</h1>
-
-<div className="bg-white border rounded-xl p-6 mb-10">
-
-<p className="text-slate-500 mb-2">
-📍 {match.city}
-</p>
-
-<p className="text-slate-500 mb-2">
-{match.match_type} • {match.format}
-</p>
-
-<p className="text-slate-500 mb-4">
-📅 {match.match_date}
-</p>
-
-<p className="text-slate-700">
-{match.description}
-</p>
-
-</div>
+  },[matchId])
 
 
-<h2 className="text-xl font-bold mb-4">
-Interested Clubs
-</h2>
 
-{interests.length === 0 && (
-<p className="text-slate-500">
-No clubs have shown interest yet.
-</p>
-)}
+  async function sendMessage(){
 
-<div className="space-y-4">
+    if(!newMessage.trim()) return
+    if(!clubId || !matchId || !myClubId) return
 
-{interests.map((interest)=>{
+    const { error } = await supabase
+      .from("messages")
+      .insert({
+        match_id: matchId,
+        from_club: myClubId,
+        to_club: clubId,
+        message: newMessage
+      })
 
-const club = interest.clubs?.[0]
+    if(error){
+      alert(error.message)
+      return
+    }
 
-if(!club) return null
+    setNewMessage("")
 
-return(
+    const { data } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("match_id", matchId)
+      .order("created_at",{ ascending:true })
 
-<div
-key={interest.club_id}
-className="bg-white border rounded-lg p-4 flex justify-between items-center"
->
+    if(data){
+      setMessages(data)
+    }
 
-<div>
+  }
 
-<p className="font-semibold">
-{club.club_name}
-</p>
 
-<p className="text-sm text-slate-500">
-{club.city}
-</p>
+  if(!clubId || !matchId){
 
-</div>
+    return(
+      <div className="min-h-screen bg-slate-50">
+        <Navbar/>
+        <div className="flex">
+          <Sidebar/>
+          <div className="flex-1 p-10">
+            <h1 className="text-2xl font-bold mb-4">Messages</h1>
+            <p className="text-slate-500">
+              Open a conversation from a match page.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
 
-<button
-onClick={()=>openMessage(interest.club_id)}
-className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700"
->
-Message
-</button>
+  }
 
-</div>
 
-)
+  if(loading){
 
-})}
+    return(
+      <div className="min-h-screen flex items-center justify-center">
+        Loading conversation...
+      </div>
+    )
 
-</div>
+  }
 
-</div>
 
-</div>
 
-</div>
+  return(
 
-)
+    <div className="min-h-screen bg-slate-50">
+
+      <Navbar/>
+
+      <div className="flex">
+
+        <Sidebar/>
+
+        <div className="flex-1 p-10 max-w-2xl">
+
+          <h1 className="text-2xl font-bold mb-6">
+            Match Conversation
+          </h1>
+
+
+          <div className="bg-white border rounded-xl p-6 mb-6 h-[420px] overflow-y-auto">
+
+            {messages.length === 0 && (
+              <p className="text-slate-500">
+                No messages yet. Start the conversation.
+              </p>
+            )}
+
+
+            {messages.map((msg)=>(
+
+              <div
+                key={msg.id}
+                className={`mb-4 ${
+                  msg.from_club === myClubId
+                    ? "text-right"
+                    : "text-left"
+                }`}
+              >
+
+                <div
+                  className={`inline-block px-4 py-2 rounded-lg max-w-[70%] ${
+                    msg.from_club === myClubId
+                      ? "bg-emerald-600 text-white"
+                      : "bg-gray-200 text-slate-800"
+                  }`}
+                >
+                  {msg.message}
+                </div>
+
+              </div>
+
+            ))}
+
+          </div>
+
+
+          <div className="flex gap-2">
+
+            <input
+              value={newMessage}
+              onChange={(e)=>setNewMessage(e.target.value)}
+              placeholder="Type message..."
+              className="flex-1 border rounded-lg p-3"
+            />
+
+            <button
+              onClick={sendMessage}
+              className="bg-emerald-600 text-white px-5 py-3 rounded-lg font-semibold hover:bg-emerald-700"
+            >
+              Send
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  )
 
 }
