@@ -8,26 +8,44 @@ export default function Dashboard(){
 
 const router = useRouter()
 
-function Card({
+function ActionCard({
 title,
-description,
-path
-}:{title:string,description:string,path:string}){
+desc,
+icon,
+path,
+color
+}:{title:string,desc:string,icon:string,path:string,color:string}){
 
 return(
 
 <div
 onClick={()=>router.push(path)}
-className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md hover:border-emerald-500 transition cursor-pointer"
+className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md hover:border-emerald-500 transition cursor-pointer flex flex-col justify-between"
 >
+
+<div>
+
+<div className={`w-10 h-10 ${color} text-white flex items-center justify-center rounded-lg mb-4`}>
+{icon}
+</div>
 
 <h3 className="font-bold text-lg mb-2">
 {title}
 </h3>
 
-<p className="text-sm text-gray-500">
-{description}
+<p className="text-sm text-slate-500">
+{desc}
 </p>
+
+</div>
+
+<button
+className="mt-6 text-sm font-semibold text-emerald-600 hover:underline text-left"
+>
+
+Open →
+
+</button>
 
 </div>
 
@@ -45,35 +63,128 @@ return(
 
 <Sidebar/>
 
-<div className="flex-1 p-10">
+<div className="flex-1 p-8">
 
-<h1 className="text-3xl font-bold mb-2">
-Dashboard
+<div className="max-w-6xl">
+
+{/* HEADER */}
+
+<header className="mb-10">
+
+<h1 className="text-3xl font-bold text-slate-900">
+Welcome back 🏏
 </h1>
 
-<p className="text-slate-600 mb-8">
-Welcome to CricTour.
+<p className="text-slate-500">
+Here is what's happening in the cricket network today.
 </p>
 
-<div className="grid md:grid-cols-3 gap-6">
+</header>
 
-<Card
+
+{/* ACTION CARDS */}
+
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+
+<ActionCard
 title="Post Match"
-description="Create a friendly match request."
+desc="Create a friendly match request."
+icon="➕"
 path="/matches/post"
+color="bg-emerald-600"
 />
 
-<Card
+<ActionCard
 title="Find Opponents"
-description="Browse clubs looking for matches."
+desc="Browse clubs looking for matches."
+icon="🔎"
 path="/matches"
+color="bg-slate-800"
 />
 
-<Card
+<ActionCard
 title="Host Tour"
-description="Invite touring teams to your club."
+desc="Invite touring teams to your club."
+icon="🚌"
 path="/tours/post"
+color="bg-slate-800"
 />
+
+</div>
+
+
+{/* RECENT MATCH FEED */}
+
+<div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+
+<div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+
+<h2 className="font-bold text-slate-800">
+Recent Match Requests
+</h2>
+
+<button
+onClick={()=>router.push("/matches")}
+className="text-emerald-600 text-sm font-semibold hover:underline"
+>
+View All
+</button>
+
+</div>
+
+
+<div className="divide-y divide-slate-50">
+
+
+<div className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition">
+
+<div>
+
+<p className="font-semibold text-slate-900">
+Sun 18 May • 40 Overs
+</p>
+
+<p className="text-sm text-slate-500">
+London CC • Away • Strength: Medium
+</p>
+
+</div>
+
+<button className="px-4 py-2 border border-emerald-600 text-emerald-600 rounded-lg text-sm font-bold hover:bg-emerald-50">
+
+Interested
+
+</button>
+
+</div>
+
+
+<div className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition">
+
+<div>
+
+<p className="font-semibold text-slate-900">
+Sat 24 May • T20
+</p>
+
+<p className="text-sm text-slate-500">
+Oxford Lions CC • Home • Strength: Medium
+</p>
+
+</div>
+
+<button className="px-4 py-2 border border-emerald-600 text-emerald-600 rounded-lg text-sm font-bold hover:bg-emerald-50">
+
+Interested
+
+</button>
+
+</div>
+
+
+</div>
+
+</div>
 
 </div>
 
