@@ -13,6 +13,22 @@ const [unreadCount,setUnreadCount] = useState(0)
 const [myClubId,setMyClubId] = useState<string | null>(null)
 
 
+/* Load unread messages from database */
+
+async function loadUnread(clubId:string){
+
+const { data } = await supabase
+.from("messages")
+.select("id")
+.eq("to_club",clubId)
+.eq("is_read",false)
+
+setUnreadCount(data?.length || 0)
+
+}
+
+
+
 useEffect(()=>{
 
 async function init(){
@@ -36,31 +52,13 @@ loadUnread(club.id)
 
 }
 
-/* Load unread count */
-
-async function loadUnread(clubId:string){
-
-const { count } = await supabase
-.from("messages")
-.select("*",{count:"exact",head:true})
-.eq("to_club",clubId)
-.eq("is_read",false)
-
-if(count){
-setUnreadCount(count)
-}else{
-setUnreadCount(0)
-}
-
-}
-
 init()
 
 },[])
 
 
 
-/* Realtime notification */
+/* Realtime listener */
 
 useEffect(()=>{
 
@@ -80,7 +78,10 @@ table:"messages"
 const newMsg:any = payload.new
 
 if(newMsg.to_club === myClubId){
-setUnreadCount(prev => prev + 1)
+
+// recalculate unread messages properly
+loadUnread(myClubId)
+
 }
 
 }
