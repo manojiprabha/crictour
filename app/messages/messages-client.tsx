@@ -24,10 +24,12 @@ const clubId = params.get("club")
 const matchId = params.get("match")
 
 const [messages,setMessages] = useState<Message[]>([])
-const [conversations,setConversations] = useState<any[]>([])
+const [conversations,setConversations] = useState<Message[]>([])
 const [newMessage,setNewMessage] = useState("")
 const [myClubId,setMyClubId] = useState<string | null>(null)
 const [loading,setLoading] = useState(true)
+
+const [tab,setTab] = useState<"inbox" | "sent">("inbox")
 
 useEffect(()=>{
 
@@ -54,7 +56,7 @@ setMyClubId(club.id)
 if(matchId){
 await loadMessages()
 }else{
-await loadConversations()
+await loadConversations(club?.id)
 }
 
 setLoading(false)
@@ -75,27 +77,27 @@ setMessages(data)
 
 }
 
-async function loadConversations(){
+async function loadConversations(clubId:any){
 
-if(!myClubId) return
+if(!clubId) return
 
 const { data } = await supabase
 .from("messages")
 .select("*")
-.or(`from_club.eq.${myClubId},to_club.eq.${myClubId}`)
+.or(`from_club.eq.${clubId},to_club.eq.${clubId}`)
 .order("created_at",{ascending:false})
 
 if(data){
 
-const uniqueMatches:any = {}
+const unique:any = {}
 
 data.forEach((msg)=>{
-if(!uniqueMatches[msg.match_id]){
-uniqueMatches[msg.match_id] = msg
+if(!unique[msg.match_id]){
+unique[msg.match_id] = msg
 }
 })
 
-setConversations(Object.values(uniqueMatches))
+setConversations(Object.values(unique))
 
 }
 
@@ -103,7 +105,8 @@ setConversations(Object.values(uniqueMatches))
 
 init()
 
-},[matchId,myClubId])
+},[matchId])
+
 
 async function sendMessage(){
 
@@ -138,6 +141,7 @@ setMessages(data)
 
 }
 
+
 if(loading){
 
 return(
@@ -147,6 +151,7 @@ Loading...
 )
 
 }
+
 
 return(
 
@@ -160,6 +165,7 @@ return(
 
 <div className="flex-1 p-10 max-w-2xl">
 
+
 {/* Conversation List */}
 
 {!matchId && (
@@ -170,15 +176,49 @@ return(
 Messages
 </h1>
 
-{conversations.length === 0 && (
-<p className="text-slate-500">
-No conversations yet.
-</p>
-)}
+
+{/* Inbox / Sent Tabs */}
+
+<div className="flex gap-3 mb-6">
+
+<button
+onClick={()=>setTab("inbox")}
+className={`px-4 py-2 rounded-lg font-semibold ${
+tab === "inbox"
+? "bg-emerald-600 text-white"
+: "bg-gray-200"
+}`}
+>
+Inbox
+</button>
+
+<button
+onClick={()=>setTab("sent")}
+className={`px-4 py-2 rounded-lg font-semibold ${
+tab === "sent"
+? "bg-emerald-600 text-white"
+: "bg-gray-200"
+}`}
+>
+Sent
+</button>
+
+</div>
+
 
 <div className="space-y-4">
 
-{conversations.map((conv)=>{
+{conversations
+.filter((conv)=>{
+
+if(tab === "inbox"){
+return conv.to_club === myClubId
+}
+
+return conv.from_club === myClubId
+
+})
+.map((conv)=>{
 
 const otherClub =
 conv.from_club === myClubId
@@ -194,7 +234,9 @@ className="bg-white border rounded-lg p-4 cursor-pointer hover:bg-gray-50"
 >
 
 <p className="font-semibold">
-Conversation
+
+{tab === "inbox" ? "From Club" : "To Club"}
+
 </p>
 
 <p className="text-sm text-slate-500 truncate">
@@ -212,6 +254,8 @@ Conversation
 </>
 
 )}
+
+
 
 {/* Chat Window */}
 
