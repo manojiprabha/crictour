@@ -29,6 +29,7 @@ export default function ClubProfile() {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Load club
   useEffect(() => {
 
     async function loadClub() {
@@ -52,16 +53,19 @@ export default function ClubProfile() {
   }, [params.id])
 
 
+  // Load matches for that club
   useEffect(() => {
 
     if (!club) return
+
+    const clubName = club.club_name
 
     async function loadMatches() {
 
       const { data } = await supabase
         .from("matches")
         .select("*")
-        .eq("club_name", club.club_name)
+        .eq("club_name", clubName)
 
       if (data) {
         setMatches(data)
