@@ -17,7 +17,9 @@ type Match = {
 export default function Dashboard(){
 
 const router = useRouter()
+
 const [matches,setMatches] = useState<Match[]>([])
+const [clubName,setClubName] = useState("")
 
 useEffect(()=>{
 
@@ -33,7 +35,7 @@ return
 
 const { data:club } = await supabase
 .from("clubs")
-.select("*")
+.select("club_name")
 .eq("created_by",user.id)
 .single()
 
@@ -41,6 +43,8 @@ if(!club){
 window.location.href="/registerclub"
 return
 }
+
+setClubName(club.club_name)
 
 }
 
@@ -121,7 +125,7 @@ return(
 <header className="mb-10">
 
 <h1 className="text-3xl font-bold text-slate-900">
-Welcome back 🏏
+Welcome back {clubName} 🏏
 </h1>
 
 <p className="text-slate-500">
@@ -130,6 +134,8 @@ Here is what's happening on CricTour today.
 
 </header>
 
+
+{/* ACTION CARDS */}
 
 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
 
@@ -156,6 +162,8 @@ path="/tours/post"
 
 </div>
 
+
+{/* RECENT MATCHES */}
 
 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
 
