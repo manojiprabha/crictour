@@ -44,13 +44,8 @@ export default function MessagesClient() {
       const { data: club } = await supabase.from("clubs").select("id").eq("created_by", user.id).single()
       if (club) setMyClubId(club.id)
 
-      // Always load conversations for the left sidebar
       await loadConversations(club?.id)
-      
-      // If a specific match is selected, load those messages
-      if (matchId) {
-        await loadMessages(club?.id)
-      }
+      if (matchId) await loadMessages(club?.id)
       setLoading(false)
     }
     init()
@@ -63,19 +58,20 @@ export default function MessagesClient() {
       .eq("match_id", matchId)
       .order("created_at", { ascending: true })
 
-    if (!data) return
-    setMessages(data)
-
-    if (data.length > 0) {
-      const firstMsg = data[0]
-      setChatClubName(firstMsg.from_club === currentClubId ? firstMsg.toClub?.club_name || "" : firstMsg.fromClub?.club_name || "")
+    if (data) {
+      setMessages(data)
+      if (data.length > 0) {
+        const firstMsg = data[0]
+        setChatClubName(firstMsg.from_club === currentClubId ? firstMsg.toClub?.club_name || "" : firstMsg.fromClub?.club_name || "")
+      }
     }
 
-    // THIS REMOVES THE "4" FROM THE SIDEBAR
-    await supabase.from("messages").update({ is_read: true }).eq("match_id", matchId).eq("to_club", currentClubId).eq("is_read", false)
-    
-    // Refresh conversations list to update unread badges locally
-    loadConversations(currentClubId)
+    /* FIX: Mark as Read in Database */
+    await supabase.from("messages")
+      .update({ is_read: true })
+      .eq("match_id", matchId)
+      .eq("to_club", currentClubId)
+      .eq("is_read", false)
   }
 
   async function loadConversations(clubId: any) {
@@ -86,13 +82,13 @@ export default function MessagesClient() {
       .or(`from_club.eq.${clubId},to_club.eq.${clubId}`)
       .order("created_at", { ascending: false })
 
-    if (!data) return
-    const unique: any = {}
-    data.forEach((msg) => { if (!unique[msg.match_id]) unique[msg.match_id] = msg })
-    setConversations(Object.values(unique))
+    if (data) {
+      const unique: any = {}
+      data.forEach((msg) => { if (!unique[msg.match_id]) unique[msg.match_id] = msg })
+      setConversations(Object.values(unique))
+    }
   }
 
-  // Realtime Logic
   useEffect(() => {
     if (!myClubId) return
     const channel = supabase.channel("messages-realtime")
@@ -111,42 +107,31 @@ export default function MessagesClient() {
     const { error } = await supabase.from("messages").insert({
       match_id: matchId, from_club: myClubId, to_club: clubId, message: newMessage, is_read: false
     })
-    if (error) { alert(error.message); return }
-    setNewMessage("")
-    if (textareaRef.current) textareaRef.current.style.height = "auto"
+    if (!error) setNewMessage("")
   }
 
-  if (loading) return <div className="p-10 text-center font-bold">Loading Messages...</div>
+  if (loading) return <div className="p-10">Loading...</div>
 
   return (
-    <div className="flex flex-col h-screen bg-white">
+    <div className="flex flex-col h-screen bg-white overflow-hidden">
       <Navbar />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        
-        {/* NEW SPLIT LAYOUT */}
-        <div className="flex flex-1">
-          
+        <div className="flex flex-1 overflow-hidden">
           {/* LEFT: INBOX LIST */}
           <div className="w-80 border-r bg-white flex flex-col">
-            <div className="p-4 border-b">
-              <h1 className="text-xl font-bold">Inbox</h1>
-            </div>
+            <div className="p-4 border-b font-bold text-xl">Inbox</div>
             <div className="flex-1 overflow-y-auto">
               {conversations.map((conv) => {
                 const otherClub = conv.from_club === myClubId ? conv.toClub?.club_name : conv.fromClub?.club_name
                 const otherClubId = conv.from_club === myClubId ? conv.to_club : conv.from_club
-                const isActive = matchId === conv.match_id
-
                 return (
                   <div
                     key={conv.id}
                     onClick={() => router.push(`/messages?club=${otherClubId}&match=${conv.match_id}`)}
-                    className={`p-4 border-b cursor-pointer transition ${isActive ? "bg-emerald-50 border-r-4 border-r-emerald-600" : "hover:bg-gray-50"}`}
+                    className={`p-4 border-b cursor-pointer transition ${matchId === conv.match_id ? "bg-emerald-50 border-r-4 border-r-emerald-600" : "hover:bg-gray-50"}`}
                   >
-                    <div className="flex justify-between items-center mb-1">
-                      <p className="font-bold text-sm">{otherClub}</p>
-                    </div>
+                    <p className="font-bold text-sm">{otherClub}</p>
                     <p className="text-xs text-slate-500 truncate">{conv.message}</p>
                   </div>
                 )
@@ -154,55 +139,30 @@ export default function MessagesClient() {
             </div>
           </div>
 
-          {/* RIGHT: ACTIVE CHAT */}
+          {/* RIGHT: CHAT BOX */}
           <div className="flex-1 flex flex-col bg-slate-50">
             {matchId ? (
               <>
-                <div className="p-4 bg-white border-b flex items-center gap-4">
-                  <h2 className="font-bold text-lg">{chatClubName}</h2>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="p-4 bg-white border-b font-bold">{chatClubName}</div>
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
                   {messages.map((msg) => (
-                    <div key={msg.id} className={`mb-4 flex ${msg.from_club === myClubId ? "justify-end" : "justify-start"}`}>
-                      <div className={`px-4 py-2 rounded-2xl max-w-[70%] text-sm shadow-sm ${
-                        msg.from_club === myClubId ? "bg-emerald-600 text-white rounded-tr-none" : "bg-white text-slate-800 rounded-tl-none border"
-                      }`}>
+                    <div key={msg.id} className={`flex ${msg.from_club === myClubId ? "justify-end" : "justify-start"}`}>
+                      <div className={`px-4 py-2 rounded-2xl max-w-[70%] text-sm shadow-sm ${msg.from_club === myClubId ? "bg-emerald-600 text-white rounded-tr-none" : "bg-white text-slate-800 rounded-tl-none border"}`}>
                         {msg.message}
                       </div>
                     </div>
                   ))}
                   <div ref={bottomRef}></div>
                 </div>
-
                 <div className="p-4 bg-white border-t">
-                  <div className="flex gap-2 max-w-4xl mx-auto">
-                    <textarea
-                      ref={textareaRef}
-                      value={newMessage}
-                      onChange={(e) => {
-                        setNewMessage(e.target.value)
-                        if (textareaRef.current) {
-                          textareaRef.current.style.height = "auto"
-                          textareaRef.current.style.height = textareaRef.current.scrollHeight + "px"
-                        }
-                      }}
-                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                      placeholder="Type message..."
-                      rows={1}
-                      className="flex-1 border border-slate-200 rounded-xl p-3 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 max-h-32"
-                    />
-                    <button onClick={sendMessage} className="bg-emerald-600 text-white px-6 rounded-xl font-bold hover:bg-emerald-700 self-end h-[46px]">
-                      Send
-                    </button>
+                  <div className="flex gap-2">
+                    <textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} placeholder="Type message..." rows={1} className="flex-1 border rounded-xl p-3 resize-none outline-none" />
+                    <button onClick={sendMessage} className="bg-emerald-600 text-white px-6 rounded-xl font-bold h-[46px]">Send</button>
                   </div>
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
-                <p className="text-5xl mb-4">💬</p>
-                <p className="font-medium">Select a club from the inbox to start chatting</p>
-              </div>
+              <div className="flex-1 flex items-center justify-center text-slate-400">Select a conversation to start chatting</div>
             )}
           </div>
         </div>
