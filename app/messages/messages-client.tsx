@@ -234,10 +234,12 @@ Sent
 {conversations
 .filter((conv)=>{
 
+// inbox = someone started conversation with me
 if(tab === "inbox"){
-return conv.to_club === myClubId
+return conv.from_club !== myClubId
 }
 
+// sent = I started the conversation
 return conv.from_club === myClubId
 
 })
