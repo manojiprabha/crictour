@@ -20,6 +20,10 @@ if(data?.user){
 
 setEmail(data.user.email || null)
 
+}else{
+
+setEmail(null)
+
 }
 
 }
@@ -32,6 +36,8 @@ async function signOut(){
 
 await supabase.auth.signOut()
 
+setEmail(null)
+
 router.push("/")
 
 }
@@ -42,7 +48,7 @@ return(
 
 <div
 className="font-bold text-lg cursor-pointer"
-onClick={()=>router.push("/dashboard")}
+onClick={()=>router.push("/")}
 >
 🏏 CricTour
 </div>
@@ -50,12 +56,10 @@ onClick={()=>router.push("/dashboard")}
 <div className="flex items-center gap-4">
 
 {email && (
-
+<>
 <span className="text-sm text-emerald-100">
 {email}
 </span>
-
-)}
 
 <button
 onClick={signOut}
@@ -63,6 +67,8 @@ className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm"
 >
 Sign Out
 </button>
+</>
+)}
 
 </div>
 
