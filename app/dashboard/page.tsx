@@ -3,18 +3,51 @@
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabase"
+
+type Match = {
+ id:string
+ club_name:string
+ match_date:string
+ format:string
+ city:string
+}
 
 export default function Dashboard(){
 
 const router = useRouter()
 
+const [matches,setMatches] = useState<Match[]>([])
+
+useEffect(()=>{
+
+async function loadMatches(){
+
+const { data } = await supabase
+.from("matches")
+.select("*")
+.order("created_at",{ascending:false})
+.limit(4)
+
+if(data){
+
+setMatches(data)
+
+}
+
+}
+
+loadMatches()
+
+},[])
+
 function ActionCard({
 title,
 desc,
 icon,
-path,
-color
-}:{title:string,desc:string,icon:string,path:string,color:string}){
+path
+}:{title:string,desc:string,icon:string,path:string}){
 
 return(
 
@@ -25,7 +58,7 @@ className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md hover:border
 
 <div>
 
-<div className={`w-10 h-10 ${color} text-white flex items-center justify-center rounded-lg mb-4`}>
+<div className="text-2xl mb-4">
 {icon}
 </div>
 
@@ -39,12 +72,8 @@ className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md hover:border
 
 </div>
 
-<button
-className="mt-6 text-sm font-semibold text-emerald-600 hover:underline text-left"
->
-
+<button className="mt-6 text-sm font-semibold text-emerald-600 hover:underline text-left">
 Open →
-
 </button>
 
 </div>
@@ -67,8 +96,6 @@ return(
 
 <div className="max-w-6xl">
 
-{/* HEADER */}
-
 <header className="mb-10">
 
 <h1 className="text-3xl font-bold text-slate-900">
@@ -76,7 +103,7 @@ Welcome back 🏏
 </h1>
 
 <p className="text-slate-500">
-Here is what's happening in the cricket network today.
+Here is what's happening on CricTour today.
 </p>
 
 </header>
@@ -91,7 +118,6 @@ title="Post Match"
 desc="Create a friendly match request."
 icon="➕"
 path="/matches/post"
-color="bg-emerald-600"
 />
 
 <ActionCard
@@ -99,7 +125,6 @@ title="Find Opponents"
 desc="Browse clubs looking for matches."
 icon="🔎"
 path="/matches"
-color="bg-slate-800"
 />
 
 <ActionCard
@@ -107,13 +132,12 @@ title="Host Tour"
 desc="Invite touring teams to your club."
 icon="🚌"
 path="/tours/post"
-color="bg-slate-800"
 />
 
 </div>
 
 
-{/* RECENT MATCH FEED */}
+{/* REAL MATCH FEED */}
 
 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
 
@@ -132,55 +156,37 @@ View All
 
 </div>
 
-
 <div className="divide-y divide-slate-50">
 
+{matches.map((match)=>(
 
-<div className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition">
-
-<div>
-
-<p className="font-semibold text-slate-900">
-Sun 18 May • 40 Overs
-</p>
-
-<p className="text-sm text-slate-500">
-London CC • Away • Strength: Medium
-</p>
-
-</div>
-
-<button className="px-4 py-2 border border-emerald-600 text-emerald-600 rounded-lg text-sm font-bold hover:bg-emerald-50">
-
-Interested
-
-</button>
-
-</div>
-
-
-<div className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition">
+<div
+key={match.id}
+className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition"
+>
 
 <div>
 
 <p className="font-semibold text-slate-900">
-Sat 24 May • T20
+{match.match_date} • {match.format}
 </p>
 
 <p className="text-sm text-slate-500">
-Oxford Lions CC • Home • Strength: Medium
+{match.club_name} • {match.city}
 </p>
 
 </div>
 
-<button className="px-4 py-2 border border-emerald-600 text-emerald-600 rounded-lg text-sm font-bold hover:bg-emerald-50">
-
-Interested
-
+<button
+onClick={()=>router.push(`/matches/${match.id}`)}
+className="px-4 py-2 border border-emerald-600 text-emerald-600 rounded-lg text-sm font-bold hover:bg-emerald-50"
+>
+View
 </button>
 
 </div>
 
+))}
 
 </div>
 
