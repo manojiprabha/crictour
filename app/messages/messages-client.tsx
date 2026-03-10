@@ -27,17 +27,14 @@ const clubId = params.get("club")
 const matchId = params.get("match")
 
 const [messages,setMessages] = useState<Message[]>([])
-const [chatClubName,setChatClubName] = useState("")
 const [conversations,setConversations] = useState<Message[]>([])
+const [chatClubName,setChatClubName] = useState("")
 const [newMessage,setNewMessage] = useState("")
 const [myClubId,setMyClubId] = useState<string | null>(null)
 const [loading,setLoading] = useState(true)
 
 const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 const bottomRef = useRef<HTMLDivElement | null>(null)
-
-
-/* ---------------- INIT ---------------- */
 
 useEffect(()=>{
 
@@ -68,6 +65,7 @@ await loadConversations(club?.id)
 }
 
 setLoading(false)
+
 }
 
 init()
@@ -93,8 +91,6 @@ if(!data) return
 
 setMessages(data)
 
-/* Determine chat partner */
-
 if(data.length > 0){
 
 const firstMsg = data[0]
@@ -106,8 +102,6 @@ setChatClubName(firstMsg.fromClub?.club_name || "")
 }
 
 }
-
-/* mark messages as read */
 
 await supabase
 .from("messages")
@@ -169,13 +163,9 @@ table:"messages"
 
 const newMsg = payload.new as Message
 
-/* update open chat */
-
 if(newMsg.match_id === matchId){
 setMessages(prev => [...prev,newMsg])
 }
-
-/* update conversation preview */
 
 setConversations(prev=>{
 
@@ -226,8 +216,6 @@ created_at:new Date().toISOString(),
 is_read:false
 }
 
-/* show instantly */
-
 setMessages(prev=>[...prev,tempMessage])
 
 const { error } = await supabase
@@ -259,7 +247,6 @@ textareaRef.current.style.height="auto"
 if(loading){
 return <div className="p-10">Loading...</div>
 }
-
 
 return(
 
@@ -295,35 +282,33 @@ conv.from_club === myClubId
 ? conv.to_club
 : conv.from_club
 
+const unreadCount = messages.filter(
+m => m.match_id === conv.match_id &&
+m.to_club === myClubId &&
+!m.is_read
+).length
+
 return(
 
 <div
 key={conv.id}
 onClick={()=>router.push(`/messages?club=${otherClubId}&match=${conv.match_id}`)}
-className={`border rounded-lg p-4 cursor-pointer hover:bg-gray-50 ${
-!conv.is_read && conv.to_club === myClubId
-? "bg-emerald-50 border-emerald-400"
-: "bg-white"
-}`}
+className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 bg-white"
 >
 
 <div className="flex justify-between">
 
 <p className="font-semibold">{otherClub}</p>
 
-{!conv.is_read && conv.to_club === myClubId && (
+{unreadCount > 0 && (
 <span className="text-xs bg-red-500 text-white px-2 py-1 rounded-full">
-New
+{unreadCount}
 </span>
 )}
 
 </div>
 
-<p className={`text-sm truncate ${
-!conv.is_read && conv.to_club === myClubId
-? "font-semibold text-slate-900"
-: "text-slate-500"
-}`}>
+<p className="text-sm text-slate-500 truncate">
 {conv.message}
 </p>
 
@@ -340,7 +325,7 @@ New
 )}
 
 
-/* Chat window */
+/* Chat */
 
 {matchId && (
 
@@ -385,7 +370,6 @@ msg.from_club === myClubId
 <div ref={bottomRef}></div>
 
 </div>
-
 
 <div className="flex gap-2">
 
