@@ -83,10 +83,13 @@ if(!clubId) return
 
 const { data } = await supabase
 .from("messages")
-.select("*")
+.select(`
+  *,
+  fromClub:clubs!messages_from_club_fkey (club_name),
+  toClub:clubs!messages_to_club_fkey (club_name)
+`)
 .or(`from_club.eq.${clubId},to_club.eq.${clubId}`)
 .order("created_at",{ascending:false})
-
 if(data){
 
 const unique:any = {}
@@ -235,10 +238,11 @@ className="bg-white border rounded-lg p-4 cursor-pointer hover:bg-gray-50"
 
 <p className="font-semibold">
 
-{tab === "inbox" ? "From Club" : "To Club"}
+{tab === "inbox"
+? conv.fromClub?.club_name
+: conv.toClub?.club_name}
 
 </p>
-
 <p className="text-sm text-slate-500 truncate">
 {conv.message}
 </p>
