@@ -55,18 +55,24 @@ export default function MessagesClient() {
     init()
   }, [matchId])
 
-  /* ---------------- LOAD CHAT: PERMANENT READ FIX ---------------- */
+  /* ---------------- LOAD CHAT & FORCE FADE ---------------- */
   async function loadMessages(currentClubId: string) {
     if (!matchId) return
 
-    // 1. UPDATE DB FIRST (Awaited so it sticks before re-fetching)
+    // 1. FORCE LOCAL UI FADE (Instant)
+    // This removes the green dot and bold text on your screen immediately
+    setConversations(prev => 
+      prev.map(conv => conv.match_id === matchId ? { ...conv, is_read: true } : conv)
+    )
+
+    // 2. UPDATE DATABASE IN BACKGROUND
     await supabase.from("messages")
       .update({ is_read: true })
       .eq("match_id", matchId)
       .eq("to_club", currentClubId)
       .eq("is_read", false)
 
-    // 2. LOAD CHAT
+    // 3. LOAD CHAT CONTENT
     const { data } = await supabase.from("messages")
       .select(`*, fromClub:clubs!messages_from_club_fkey (club_name), toClub:clubs!messages_to_club_fkey (club_name)`)
       .eq("match_id", matchId)
@@ -79,9 +85,6 @@ export default function MessagesClient() {
         setChatClubName(first.from_club === currentClubId ? first.toClub?.club_name || "" : first.fromClub?.club_name || "")
       }
     }
-
-    // 3. RE-FETCH INBOX (Syncs the faded state permanently)
-    await loadConversations(currentClubId)
   }
 
   async function loadConversations(clubId: string) {
@@ -98,18 +101,21 @@ export default function MessagesClient() {
     }
   }
 
+  /* ---------------- REALTIME LISTENER ---------------- */
   useEffect(() => {
     if (!myClubId) return
-    const channel = supabase.channel("chat-realtime").on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
-      const newMsg = payload.new as Message
-      if (newMsg.match_id === matchId) {
-        setMessages(prev => {
-          if (prev.find(m => m.id === newMsg.id)) return prev
-          return [...prev, newMsg]
-        })
-      }
-      loadConversations(myClubId)
-    }).subscribe()
+    const channel = supabase.channel("chat-realtime")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        const newMsg = payload.new as Message
+        if (newMsg.match_id === matchId) {
+          setMessages(prev => {
+            if (prev.find(m => m.id === newMsg.id)) return prev
+            return [...prev, newMsg]
+          })
+        }
+        loadConversations(myClubId)
+      })
+      .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [matchId, myClubId])
 
@@ -126,7 +132,7 @@ export default function MessagesClient() {
     }
   }
 
-  if (loading) return <div className="p-10 text-center font-bold">Connecting to CricTour...</div>
+  if (loading) return <div className="p-10 text-center font-bold">Connecting...</div>
 
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden">
