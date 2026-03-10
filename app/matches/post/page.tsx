@@ -51,17 +51,32 @@ loadClub()
 
 async function submitMatch(){
 
-await supabase.from("matches").insert({
+if(!date){
+alert("Please select a match date")
+return
+}
 
-club_name:clubName,
-city,
-match_type:matchType,
-format,
-match_date:date,
-description,
-contact_email:email
+const { error } = await supabase
+.from("matches")
+.insert([
+{
+club_name: clubName,
+city: city,
+match_type: matchType,
+format: format,
+match_date: date,
+description: description,
+contact_email: email
+}
+])
 
-})
+if(error){
+console.log("Match insert error:", error)
+alert(error.message)
+return
+}
+
+alert("Match posted successfully!")
 
 router.push("/matches")
 
