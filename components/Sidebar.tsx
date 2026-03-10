@@ -12,6 +12,9 @@ const pathname = usePathname()
 const [unreadCount,setUnreadCount] = useState(0)
 const [myClubId,setMyClubId] = useState<string | null>(null)
 
+
+/* -------- Load unread messages -------- */
+
 async function loadUnread(clubId:string){
 
 const { data } = await supabase
@@ -24,11 +27,15 @@ setUnreadCount(data?.length || 0)
 
 }
 
+
+/* -------- Initial load -------- */
+
 useEffect(()=>{
 
 async function init(){
 
 const { data:userData } = await supabase.auth.getUser()
+
 if(!userData?.user) return
 
 const { data:club } = await supabase
@@ -49,7 +56,8 @@ init()
 },[])
 
 
-/* realtime listener */
+
+/* -------- Realtime listener -------- */
 
 useEffect(()=>{
 
@@ -59,24 +67,38 @@ const channel = supabase
 .channel("sidebar-realtime")
 .on(
 "postgres_changes",
-{ event:"*", schema:"public", table:"messages" },
-()=>{ loadUnread(myClubId) }
+{
+event:"*",
+schema:"public",
+table:"messages"
+},
+()=>{
+loadUnread(myClubId)
+}
 )
 .subscribe()
 
-return ()=> supabase.removeChannel(channel)
+return () => {
+supabase.removeChannel(channel)
+}
 
 },[myClubId])
 
 
-/* refresh when route changes */
+
+/* -------- Refresh on page change -------- */
 
 useEffect(()=>{
 
-if(myClubId) loadUnread(myClubId)
+if(myClubId){
+loadUnread(myClubId)
+}
 
 },[pathname,myClubId])
 
+
+
+/* -------- Navigation item -------- */
 
 function NavItem({label,path,icon}:{label:string,path:string,icon:string}){
 
@@ -110,6 +132,9 @@ ${active
 
 }
 
+
+/* -------- UI -------- */
+
 return(
 
 <div className="w-64 bg-white border-r min-h-screen p-6">
@@ -121,11 +146,17 @@ Navigation
 <div className="space-y-2">
 
 <NavItem label="Dashboard" path="/dashboard" icon="🏠"/>
+
 <NavItem label="Match Board" path="/matches" icon="🏏"/>
+
 <NavItem label="My Matches" path="/my-matches" icon="📅"/>
+
 <NavItem label="Clubs" path="/clubs" icon="👥"/>
+
 <NavItem label="Tours" path="/tours" icon="🚌"/>
+
 <NavItem label="Messages" path="/messages" icon="💬"/>
+
 <NavItem label="Club Profile" path="/profile" icon="⚙️"/>
 
 </div>
