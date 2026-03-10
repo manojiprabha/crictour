@@ -53,10 +53,8 @@ export default function MessagesClient() {
   async function loadMessages(currentClubId: string) {
     if (!matchId) return
 
-    // 1. Mark as read in DB first
     await supabase.from("messages").update({ is_read: true }).eq("match_id", matchId).eq("to_club", currentClubId).eq("is_read", false)
 
-    // 2. Load Chat
     const { data } = await supabase.from("messages").select(`*, fromClub:clubs!messages_from_club_fkey (club_name), toClub:clubs!messages_to_club_fkey (club_name)`).eq("match_id", matchId).order("created_at", { ascending: true })
 
     if (data) {
@@ -66,8 +64,6 @@ export default function MessagesClient() {
         setChatClubName(first.from_club === currentClubId ? first.toClub?.club_name || "" : first.fromClub?.club_name || "")
       }
     }
-
-    // 3. Refresh Inbox state locally so Bold/Dot goes away instantly
     await loadConversations(currentClubId)
   }
 
@@ -85,7 +81,13 @@ export default function MessagesClient() {
     if (!myClubId) return
     const channel = supabase.channel("chat-realtime").on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
       const newMsg = payload.new as Message
-      if (newMsg.match_id === matchId) setMessages(prev => [...prev, newMsg])
+      if (newMsg.match_id === matchId) {
+        // Only add if not already in state to prevent double messages
+        setMessages(prev => {
+          if (prev.find(m => m.id === newMsg.id)) return prev
+          return [...prev, newMsg]
+        })
+      }
       loadConversations(myClubId)
     }).subscribe()
     return () => { supabase.removeChannel(channel) }
@@ -95,16 +97,24 @@ export default function MessagesClient() {
 
   async function sendMessage() {
     if (!newMessage.trim() || !clubId || !matchId || !myClubId) return
-    const { data, error } = await supabase.from("messages").insert({ match_id: matchId, from_club: myClubId, to_club: clubId, message: newMessage, is_read: false }).select()
-    if (!error && data) {
-      setMessages(prev => [...prev, data[0]])
+    
+    // We do NOT manually setMessages here to avoid the "Double Message" bug
+    // The Realtime listener above will handle showing the message once it's in the DB
+    const { error } = await supabase.from("messages").insert({ 
+      match_id: matchId, 
+      from_club: myClubId, 
+      to_club: clubId, 
+      message: newMessage, 
+      is_read: false 
+    })
+
+    if (!error) {
       setNewMessage("")
       if (textareaRef.current) textareaRef.current.style.height = "auto"
-      loadConversations(myClubId) // Update inbox for the latest snippet
     }
   }
 
-  if (loading) return <div className="p-10 text-center font-bold">Loading CricTour Messages...</div>
+  if (loading) return <div className="p-10 text-center">Loading...</div>
 
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden">
@@ -126,10 +136,10 @@ export default function MessagesClient() {
                   <div key={conv.id} onClick={() => router.push(`/messages?club=${otherId}&match=${conv.match_id}`)}
                     className={`p-4 border-b cursor-pointer transition ${active ? "bg-emerald-50 border-r-4 border-r-emerald-600" : "hover:bg-gray-50"}`}>
                     <div className="flex justify-between items-center">
-                      <p className={`text-sm ${unread ? "font-black text-slate-900" : "text-slate-500 font-medium"}`}>{otherClub}</p>
-                      {unread && <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-sm"></span>}
+                      <p className={`text-sm ${unread ? "font-bold text-slate-900" : "text-slate-500"}`}>{otherClub}</p>
+                      {unread && <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span>}
                     </div>
-                    <p className={`text-xs mt-1 truncate ${unread ? "text-slate-700 font-bold" : "text-slate-400"}`}>{conv.message}</p>
+                    <p className="text-xs text-gray-400 truncate mt-1">{conv.message}</p>
                   </div>
                 )
               })}
@@ -140,7 +150,7 @@ export default function MessagesClient() {
           <div className="flex-1 flex flex-col bg-slate-50 relative">
             {matchId ? (
               <>
-                <div className="p-4 bg-white border-b font-bold text-slate-800 shadow-sm">{chatClubName}</div>
+                <div className="p-4 bg-white border-b font-bold text-slate-800">{chatClubName}</div>
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
                   {messages.map(msg => (
                     <div key={msg.id} className={`flex ${msg.from_club === myClubId ? "justify-end" : "justify-start"}`}>
@@ -152,17 +162,33 @@ export default function MessagesClient() {
                   <div ref={bottomRef}></div>
                 </div>
 
-                {/* INPUT - Fixed "Black Line" Glitch */}
+                {/* FIXED INPUT BAR */}
                 <div className="p-4 bg-white border-t border-slate-200">
-                  <div className="flex gap-2 items-end max-w-4xl mx-auto">
-                    <textarea ref={textareaRef} value={newMessage} onChange={(e) => { setNewMessage(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} rows={1} placeholder="Type message..." 
-                      className="flex-1 border border-slate-300 rounded-xl p-3 resize-none outline-none focus:ring-2 focus:ring-emerald-500 max-h-32 text-sm" />
-                    <button onClick={sendMessage} className="bg-emerald-600 text-white px-6 rounded-xl font-bold h-[48px] hover:bg-emerald-700 transition-colors">Send</button>
+                  <div className="flex items-end gap-3 w-full">
+                    <textarea 
+                      ref={textareaRef} 
+                      value={newMessage} 
+                      onChange={(e) => { 
+                        setNewMessage(e.target.value); 
+                        e.target.style.height = 'auto'; 
+                        e.target.style.height = e.target.scrollHeight + 'px' 
+                      }} 
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} 
+                      rows={1} 
+                      placeholder="Type message..." 
+                      className="flex-1 border border-slate-300 rounded-xl p-3 resize-none outline-none focus:ring-1 focus:ring-emerald-500 max-h-32 text-sm leading-relaxed" 
+                    />
+                    <button 
+                      onClick={sendMessage} 
+                      className="bg-emerald-600 text-white px-6 rounded-xl font-bold h-[46px] hover:bg-emerald-700 transition-colors flex-shrink-0"
+                    >
+                      Send
+                    </button>
                   </div>
                 </div>
               </>
             ) : (
-              <div className="flex flex-1 items-center justify-center text-slate-400 font-medium italic">Select a conversation to start coordinating</div>
+              <div className="flex flex-1 items-center justify-center text-slate-400">Select a conversation</div>
             )}
           </div>
         </div>

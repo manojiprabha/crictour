@@ -7,49 +7,25 @@ import { supabase } from "@/lib/supabase"
 export default function Sidebar() {
   const router = useRouter()
   const pathname = usePathname()
-  const [myClubId, setMyClubId] = useState<string | null>(null)
 
-  /* -------- Initial load to identify club -------- */
-  useEffect(() => {
-    async function init() {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData?.user) return
-
-      const { data: club } = await supabase
-        .from("clubs")
-        .select("id")
-        .eq("created_by", userData.user.id)
-        .single()
-
-      if (club) {
-        setMyClubId(club.id)
-      }
-    }
-    init()
-  }, [])
-
-  /* -------- Navigation item -------- */
   function NavItem({ label, path, icon }: { label: string, path: string, icon: string }) {
     const active = pathname === path
 
     return (
       <button
         onClick={() => router.push(path)}
-        className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm transition
+        className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-sm transition
         ${active
           ? "bg-emerald-50 text-emerald-700 font-bold shadow-sm"
-          : "text-slate-600 hover:bg-slate-100"}
+          : "text-slate-600 hover:bg-slate-50"}
         `}
       >
-        <div className="flex items-center gap-3">
-          <span className="text-lg">{icon}</span>
-          <span>{label}</span>
-        </div>
+        <span className="text-lg">{icon}</span>
+        <span>{label}</span>
       </button>
     )
   }
 
-  /* -------- UI -------- */
   return (
     <div className="w-64 bg-white border-r h-screen sticky top-0 p-6 flex flex-col shadow-sm">
       <h2 className="text-[10px] font-black tracking-widest text-slate-400 mb-8 uppercase">
