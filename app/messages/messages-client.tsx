@@ -346,11 +346,18 @@ msg.from_club === myClubId
 
 <div className="flex gap-2">
 
-<input
+<textarea
 value={newMessage}
 onChange={(e)=>setNewMessage(e.target.value)}
+onKeyDown={(e)=>{
+if(e.key === "Enter" && !e.shiftKey){
+e.preventDefault()
+sendMessage()
+}
+}}
 placeholder="Type message..."
-className="flex-1 border rounded-lg p-3"
+rows={1}
+className="flex-1 border rounded-lg p-3 resize-none"
 />
 
 <button
