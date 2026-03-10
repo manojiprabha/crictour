@@ -13,6 +13,7 @@ type Message = {
   to_club: string
   match_id: string
   created_at: string
+  is_read: boolean
 
   fromClub?: {
     club_name: string
@@ -80,6 +81,14 @@ const { data } = await supabase
 
 if(data){
 setMessages(data)
+
+await supabase
+.from("messages")
+.update({ is_read: true })
+.eq("match_id", matchId)
+.eq("to_club", myClubId)
+.eq("is_read", false)
+
 }
 
 }
@@ -240,8 +249,14 @@ return(
 <div
 key={conv.id}
 onClick={()=>router.push(`/messages?club=${otherClub}&match=${conv.match_id}`)}
-className="bg-white border rounded-lg p-4 cursor-pointer hover:bg-gray-50"
+className={`border rounded-lg p-4 cursor-pointer hover:bg-gray-50 ${
+!conv.is_read && conv.to_club === myClubId
+? "bg-emerald-50 border-emerald-400"
+: "bg-white"
+}`}
 >
+
+<div className="flex items-center gap-2">
 
 <p className="font-semibold">
 
@@ -250,7 +265,21 @@ className="bg-white border rounded-lg p-4 cursor-pointer hover:bg-gray-50"
 : conv.toClub?.club_name}
 
 </p>
-<p className="text-sm text-slate-500 truncate">
+
+{!conv.is_read && conv.to_club === myClubId && (
+
+<span className="text-xs bg-red-500 text-white px-2 py-1 rounded-full">
+New
+</span>
+
+)}
+
+</div>
+<p className={`text-sm truncate ${
+!conv.is_read && conv.to_club === myClubId
+? "font-semibold text-slate-900"
+: "text-slate-500"
+}`}>
 {conv.message}
 </p>
 
