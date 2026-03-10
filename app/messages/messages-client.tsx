@@ -33,6 +33,7 @@ const clubId = params.get("club")
 const matchId = params.get("match")
 
 const [messages,setMessages] = useState<Message[]>([])
+const [chatClubName,setChatClubName] = useState("")
 const [conversations,setConversations] = useState<Message[]>([])
 const [newMessage,setNewMessage] = useState("")
 const [myClubId,setMyClubId] = useState<string | null>(null)
@@ -88,6 +89,18 @@ const { data } = await supabase
 if(data){
 
 setMessages(data)
+
+if(data.length > 0){
+
+const firstMsg = data[0]
+
+if(firstMsg.from_club === myClubId){
+setChatClubName(firstMsg.toClub?.club_name || "")
+}else{
+setChatClubName(firstMsg.fromClub?.club_name || "")
+}
+
+}
 
 await supabase
 .from("messages")
@@ -336,10 +349,20 @@ className="px-3 py-1 bg-gray-200 rounded-lg text-sm hover:bg-gray-300"
 ← Back
 </button>
 
+<div className="flex items-center gap-4 mb-6">
+
+<button
+onClick={()=>router.push("/messages")}
+className="px-3 py-1 bg-gray-200 rounded-lg text-sm hover:bg-gray-300"
+>
+← Back
+</button>
+
 <h1 className="text-2xl font-bold">
-Match Conversation
+{chatClubName}
 </h1>
 
+</div>
 </div>
 
 <div className="bg-white border rounded-xl p-6 mb-6 h-[420px] overflow-y-auto">
