@@ -349,20 +349,10 @@ className="px-3 py-1 bg-gray-200 rounded-lg text-sm hover:bg-gray-300"
 ← Back
 </button>
 
-<div className="flex items-center gap-4 mb-6">
-
-<button
-onClick={()=>router.push("/messages")}
-className="px-3 py-1 bg-gray-200 rounded-lg text-sm hover:bg-gray-300"
->
-← Back
-</button>
-
 <h1 className="text-2xl font-bold">
 {chatClubName}
 </h1>
 
-</div>
 </div>
 
 <div className="bg-white border rounded-xl p-6 mb-6 h-[420px] overflow-y-auto">
