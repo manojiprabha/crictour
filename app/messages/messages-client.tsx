@@ -39,6 +39,7 @@ const [myClubId,setMyClubId] = useState<string | null>(null)
 const [loading,setLoading] = useState(true)
 
 const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+const bottomRef = useRef<HTMLDivElement | null>(null)
 
 useEffect(()=>{
 
@@ -85,6 +86,7 @@ const { data } = await supabase
 .order("created_at",{ascending:true})
 
 if(data){
+
 setMessages(data)
 
 await supabase
@@ -130,7 +132,63 @@ setConversations(Object.values(unique))
 
 init()
 
+
+/* REALTIME LISTENER */
+
+const channel = supabase
+.channel("messages-realtime")
+.on(
+"postgres_changes",
+{
+event:"INSERT",
+schema:"public",
+table:"messages"
+},
+(payload)=>{
+
+const newMsg = payload.new as Message
+
+if(newMsg.match_id === matchId){
+setMessages(prev => [...prev,newMsg])
+}
+
+setConversations(prev=>{
+
+const existing = prev.find(c=>c.match_id === newMsg.match_id)
+
+if(existing){
+return prev.map(c =>
+c.match_id === newMsg.match_id ? newMsg : c
+)
+}
+
+return [newMsg,...prev]
+
+})
+
+}
+)
+.subscribe()
+
+
+return ()=>{
+
+supabase.removeChannel(channel)
+
+}
+
 },[matchId])
+
+
+
+/* AUTO SCROLL */
+
+useEffect(()=>{
+
+bottomRef.current?.scrollIntoView({behavior:"smooth"})
+
+},[messages])
+
 
 
 async function sendMessage(){
@@ -156,33 +214,23 @@ return
 setNewMessage("")
 
 if(textareaRef.current){
-textareaRef.current.style.height = "auto"
-}
-
-const { data } = await supabase
-.from("messages")
-.select(`
-  *,
-  fromClub:clubs!messages_from_club_fkey (club_name),
-  toClub:clubs!messages_to_club_fkey (club_name)
-`)
-.eq("match_id",matchId)
-.order("created_at",{ascending:true})
-
-if(data){
-setMessages(data)
+textareaRef.current.style.height="auto"
 }
 
 }
+
 
 
 if(loading){
+
 return(
 <div className="p-10">
 Loading...
 </div>
 )
+
 }
+
 
 
 return(
@@ -197,7 +245,7 @@ return(
 
 <div className="flex-1 p-10 max-w-2xl">
 
-{/* Conversation List */}
+{/* CONVERSATION LIST */}
 
 {!matchId && (
 
@@ -272,7 +320,8 @@ New
 )}
 
 
-{/* Chat Window */}
+
+{/* CHAT WINDOW */}
 
 {matchId && (
 
@@ -317,7 +366,10 @@ msg.from_club === myClubId
 
 ))}
 
+<div ref={bottomRef}></div>
+
 </div>
+
 
 <div className="flex gap-2">
 
@@ -329,13 +381,13 @@ onChange={(e)=>{
 setNewMessage(e.target.value)
 
 if(textareaRef.current){
-textareaRef.current.style.height = "auto"
-textareaRef.current.style.height = textareaRef.current.scrollHeight + "px"
+textareaRef.current.style.height="auto"
+textareaRef.current.style.height=textareaRef.current.scrollHeight+"px"
 }
 
 }}
 onKeyDown={(e)=>{
-if(e.key === "Enter" && !e.shiftKey){
+if(e.key==="Enter" && !e.shiftKey){
 e.preventDefault()
 sendMessage()
 }
