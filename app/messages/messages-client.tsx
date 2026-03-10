@@ -35,7 +35,6 @@ export default function MessagesClient() {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
-  // Format timestamp helper
   const formatTime = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -56,17 +55,18 @@ export default function MessagesClient() {
     init()
   }, [matchId])
 
+  /* ---------------- LOAD CHAT: PERMANENT READ FIX ---------------- */
   async function loadMessages(currentClubId: string) {
     if (!matchId) return
 
-    // 1. Mark as Read in Database
+    // 1. UPDATE DB FIRST (Awaited so it sticks before re-fetching)
     await supabase.from("messages")
       .update({ is_read: true })
       .eq("match_id", matchId)
       .eq("to_club", currentClubId)
       .eq("is_read", false)
 
-    // 2. Load Chat History
+    // 2. LOAD CHAT
     const { data } = await supabase.from("messages")
       .select(`*, fromClub:clubs!messages_from_club_fkey (club_name), toClub:clubs!messages_to_club_fkey (club_name)`)
       .eq("match_id", matchId)
@@ -80,10 +80,8 @@ export default function MessagesClient() {
       }
     }
 
-    // 3. UI FIX: Fade the green dot/bold text immediately
-    setConversations(prev => 
-      prev.map(conv => conv.match_id === matchId ? { ...conv, is_read: true } : conv)
-    )
+    // 3. RE-FETCH INBOX (Syncs the faded state permanently)
+    await loadConversations(currentClubId)
   }
 
   async function loadConversations(clubId: string) {
@@ -106,7 +104,7 @@ export default function MessagesClient() {
       const newMsg = payload.new as Message
       if (newMsg.match_id === matchId) {
         setMessages(prev => {
-          if (prev.find(m => m.id === newMsg.id)) return prev // Prevent double messages
+          if (prev.find(m => m.id === newMsg.id)) return prev
           return [...prev, newMsg]
         })
       }
@@ -128,7 +126,7 @@ export default function MessagesClient() {
     }
   }
 
-  if (loading) return <div className="p-10 text-center font-bold">Loading Messages...</div>
+  if (loading) return <div className="p-10 text-center font-bold">Connecting to CricTour...</div>
 
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden">
@@ -136,9 +134,10 @@ export default function MessagesClient() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <div className="flex flex-1 overflow-hidden border-t border-slate-200">
+          
           {/* INBOX */}
           <div className="w-80 border-r bg-white flex flex-col">
-            <div className="p-4 border-b font-bold text-slate-800">Inbox</div>
+            <div className="p-4 border-b font-bold text-slate-800 tracking-tight">Inbox</div>
             <div className="flex-1 overflow-y-auto">
               {conversations.map(conv => {
                 const otherClub = conv.from_club === myClubId ? conv.toClub?.club_name : conv.fromClub?.club_name
@@ -151,7 +150,7 @@ export default function MessagesClient() {
                     className={`p-4 border-b cursor-pointer transition ${active ? "bg-emerald-50 border-r-4 border-r-emerald-600" : "hover:bg-gray-50"}`}>
                     <div className="flex justify-between items-center">
                       <p className={`text-sm ${unread ? "font-black text-slate-900" : "text-slate-500 font-medium"}`}>{otherClub}</p>
-                      {unread && <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-sm animate-pulse"></span>}
+                      {unread && <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-sm"></span>}
                     </div>
                     <p className={`text-xs mt-1 truncate ${unread ? "text-slate-700 font-bold" : "text-slate-400"}`}>{conv.message}</p>
                   </div>
@@ -171,17 +170,17 @@ export default function MessagesClient() {
                       <div className={`px-4 py-2 rounded-2xl text-sm shadow-sm max-w-[70%] ${msg.from_club === myClubId ? "bg-emerald-600 text-white rounded-tr-none" : "bg-white border border-slate-200 text-slate-800 rounded-tl-none"}`}>
                         {msg.message}
                       </div>
-                      <span className="text-[10px] text-slate-400 mt-1 px-1">{formatTime(msg.created_at)}</span>
+                      <span className="text-[10px] text-slate-400 mt-1 px-1 font-medium">{formatTime(msg.created_at)}</span>
                     </div>
                   ))}
                   <div ref={bottomRef}></div>
                 </div>
 
                 <div className="p-4 bg-white border-t border-slate-200">
-                  <div className="flex items-end gap-3 w-full max-w-4xl mx-auto pr-2">
+                  <div className="flex items-end gap-3 w-full max-w-4xl mx-auto pr-4">
                     <textarea ref={textareaRef} value={newMessage} onChange={(e) => { setNewMessage(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} rows={1} placeholder="Type message..." 
                       className="flex-1 border border-slate-300 rounded-xl p-3 resize-none outline-none focus:ring-1 focus:ring-emerald-500 max-h-32 text-sm" />
-                    <button onClick={sendMessage} className="bg-emerald-600 text-white px-6 rounded-xl font-bold h-[46px] hover:bg-emerald-700 transition-colors flex-shrink-0">Send</button>
+                    <button onClick={sendMessage} className="bg-emerald-600 text-white px-6 rounded-xl font-bold h-[48px] hover:bg-emerald-700 transition-colors flex-shrink-0">Send</button>
                   </div>
                 </div>
               </>
