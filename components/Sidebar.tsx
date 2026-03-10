@@ -1,11 +1,97 @@
 "use client"
 
 import { useRouter, usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabase"
 
 export default function Sidebar(){
 
 const router = useRouter()
 const pathname = usePathname()
+
+const [unreadCount,setUnreadCount] = useState(0)
+const [myClubId,setMyClubId] = useState<string | null>(null)
+
+
+useEffect(()=>{
+
+async function init(){
+
+const { data:userData } = await supabase.auth.getUser()
+const user = userData?.user
+
+if(!user) return
+
+const { data:club } = await supabase
+.from("clubs")
+.select("id")
+.eq("created_by",user.id)
+.single()
+
+if(!club) return
+
+setMyClubId(club.id)
+
+loadUnread(club.id)
+
+}
+
+/* Load unread count */
+
+async function loadUnread(clubId:string){
+
+const { data } = await supabase
+.from("messages")
+.select("id")
+.eq("to_club",clubId)
+.eq("is_read",false)
+
+setUnreadCount(data?.length || 0)
+
+}
+
+init()
+
+},[])
+
+
+
+/* Realtime notification */
+
+useEffect(()=>{
+
+if(!myClubId) return
+
+const channel = supabase
+.channel("messages-notifications")
+.on(
+"postgres_changes",
+{
+event:"INSERT",
+schema:"public",
+table:"messages"
+},
+(payload)=>{
+
+const newMsg:any = payload.new
+
+if(newMsg.to_club === myClubId){
+
+setUnreadCount(prev => prev + 1)
+
+}
+
+}
+)
+.subscribe()
+
+return ()=>{
+supabase.removeChannel(channel)
+}
+
+},[myClubId])
+
+
 
 function NavItem({label, path, icon}:{label:string,path:string,icon:string}){
 
@@ -14,23 +100,46 @@ const active = pathname === path
 return(
 
 <button
-onClick={()=>router.push(path)}
-className={`flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg text-sm transition
+onClick={()=>{
+
+if(label === "Messages"){
+setUnreadCount(0)
+}
+
+router.push(path)
+
+}}
+className={`flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-sm transition
 ${active
  ? "bg-emerald-50 text-emerald-700 font-semibold"
  : "text-slate-600 hover:bg-slate-100"}
 `}
 >
 
+<div className="flex items-center gap-3">
+
 <span className="text-lg">{icon}</span>
 
-{label}
+<span>{label}</span>
+
+</div>
+
+
+{label === "Messages" && unreadCount > 0 && (
+
+<span className="text-xs bg-red-500 text-white px-2 py-1 rounded-full">
+{unreadCount}
+</span>
+
+)}
 
 </button>
 
 )
 
 }
+
+
 
 return(
 
