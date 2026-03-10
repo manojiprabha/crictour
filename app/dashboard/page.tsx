@@ -18,25 +18,44 @@ const [playCricket,setPlayCricket] = useState("")
 
 async function createClub(){
 
-const { data:userData } = await supabase.auth.getUser()
-const user = userData?.user
+console.log("Creating club...")
 
-if(!user){
-alert("Login required")
+const { data:userData, error:userError } = await supabase.auth.getUser()
+
+if(userError){
+console.log("User error:",userError)
+alert("User error")
 return
 }
 
-await supabase.from("clubs").insert({
+const user = userData?.user
+
+if(!user){
+alert("You must be logged in")
+return
+}
+
+const { error } = await supabase
+.from("clubs")
+.insert({
 club_name:clubName,
-city,
-address,
-role,
+city:city,
+address:address,
+role:role,
 contact_phone:phone,
 play_cricket_url:playCricket,
 created_by:user.id
 })
 
-router.push("/dashboard")
+if(error){
+console.log("Insert error:",error)
+alert(error.message)
+return
+}
+
+alert("Club created!")
+
+window.location.href = "/dashboard"
 
 }
 
@@ -106,7 +125,8 @@ className="w-full border rounded-lg p-2"
 
 <button
 onClick={createClub}
-className="w-full bg-emerald-600 text-white py-2 rounded-lg font-semibold"
+className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold 
+hover:bg-emerald-700 active:scale-95 transition cursor-pointer"
 >
 Create Club
 </button>
