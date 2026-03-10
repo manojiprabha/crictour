@@ -17,11 +17,9 @@ type Match = {
 }
 
 type InterestedClub = {
- club_id:string
- clubs:{
-  club_name:string
-  city:string
- }[]
+ id:string
+ club_name:string
+ city:string
 }
 
 export default function MatchDetail(){
@@ -52,19 +50,27 @@ setMatch(data)
 
 async function loadInterests(){
 
-const { data } = await supabase
+const { data: interests } = await supabase
 .from("match_interests")
-.select(`
-club_id,
-clubs!match_interests_club_id_fkey (
-club_name,
-city
-)
-`)
+.select("club_id")
 .eq("match_id", matchId)
 
-if(data){
-setInterests(data)
+if(!interests) return
+
+const clubIds = interests.map(i => i.club_id)
+
+if(clubIds.length === 0){
+setInterests([])
+return
+}
+
+const { data: clubs } = await supabase
+.from("clubs")
+.select("id, club_name, city")
+.in("id", clubIds)
+
+if(clubs){
+setInterests(clubs)
 }
 
 }
@@ -135,16 +141,14 @@ No clubs have shown interest yet.
 
 <div className="space-y-4">
 
-{interests.map((interest)=>{
-
-const club = interest.clubs?.[0]
+{interests.map((club)=>(
 
 if(!club) return null
 
 return(
 
 <div
-key={interest.club_id}
+key={club.id}
 className="bg-white border rounded-lg p-4 flex justify-between items-center"
 >
 
@@ -161,15 +165,14 @@ className="bg-white border rounded-lg p-4 flex justify-between items-center"
 </div>
 
 <button
-onClick={()=>openMessage(interest.club_id)}
+onClick={()=>openMessage(club.id)}
 className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700"
 >
 Message
 </button>
 
 </div>
-
-)
+))
 
 })}
 
