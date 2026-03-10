@@ -25,11 +25,11 @@ export default function Sidebar() {
     init()
   }, [])
 
+  // FIXED REALTIME: Listens to * (Insert and Update) to clear badges instantly
   useEffect(() => {
     if (!myClubId) return
     const channel = supabase.channel("sidebar-notifications")
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, (payload) => {
-        // Refresh count on ANY change to messages related to us
         const newMsg: any = payload.new
         const oldMsg: any = payload.old
         if (newMsg?.to_club === myClubId || oldMsg?.to_club === myClubId) {
@@ -44,13 +44,13 @@ export default function Sidebar() {
   function NavItem({ label, path, icon }: { label: string, path: string, icon: string }) {
     const active = pathname === path
     return (
-      <button onClick={() => router.push(path)} className={`flex items-center justify-between w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all ${active ? "bg-emerald-50 text-emerald-700 font-bold" : "text-slate-600 hover:bg-slate-50"}`}>
+      <button onClick={() => router.push(path)} className={`flex items-center justify-between w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all ${active ? "bg-emerald-50 text-emerald-700 font-bold shadow-sm" : "text-slate-600 hover:bg-slate-50"}`}>
         <div className="flex items-center gap-3">
           <span className="text-lg">{icon}</span>
           <span>{label}</span>
         </div>
         {label === "Messages" && unreadCount > 0 && (
-          <span className="text-[10px] bg-red-500 text-white h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full font-bold">
+          <span className="text-[10px] bg-red-500 text-white h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full font-black">
             {unreadCount}
           </span>
         )}

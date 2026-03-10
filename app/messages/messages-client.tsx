@@ -50,7 +50,17 @@ export default function MessagesClient() {
     init()
   }, [matchId])
 
+  /* ---------------- LOAD CHAT & CLEAR NOTIFICATIONS ---------------- */
   async function loadMessages(currentClubId: string) {
+    // 1. UPDATE DATABASE FIRST: Mark all messages for this match as read
+    const { error: updateError } = await supabase
+      .from("messages")
+      .update({ is_read: true })
+      .eq("match_id", matchId)
+      .eq("to_club", currentClubId)
+      .eq("is_read", false)
+
+    // 2. FETCH MESSAGES
     const { data } = await supabase
       .from("messages")
       .select(`*, fromClub:clubs!messages_from_club_fkey (club_name), toClub:clubs!messages_to_club_fkey (club_name)`)
@@ -63,15 +73,8 @@ export default function MessagesClient() {
         const firstMsg = data[0]
         setChatClubName(firstMsg.from_club === currentClubId ? firstMsg.toClub?.club_name || "" : firstMsg.fromClub?.club_name || "")
       }
-
-      // MARK AS READ: This clears the sidebar badge
-      await supabase.from("messages")
-        .update({ is_read: true })
-        .eq("match_id", matchId)
-        .eq("to_club", currentClubId)
-        .eq("is_read", false)
       
-      // Refresh the list to remove the "Bright" unread state locally
+      // 3. REFRESH INBOX: Ensures the "Bold" text and "Dot" vanish locally
       loadConversations(currentClubId)
     }
   }
@@ -86,11 +89,7 @@ export default function MessagesClient() {
 
     if (data) {
       const unique: any = {}
-      data.forEach((msg) => {
-        if (!unique[msg.match_id]) {
-          unique[msg.match_id] = msg
-        }
-      })
+      data.forEach((msg) => { if (!unique[msg.match_id]) unique[msg.match_id] = msg })
       setConversations(Object.values(unique))
     }
   }
@@ -100,9 +99,7 @@ export default function MessagesClient() {
     const channel = supabase.channel("messages-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, (payload) => {
         const newMsg = payload.new as Message
-        if (newMsg && newMsg.match_id === matchId) {
-          setMessages(prev => [...prev, newMsg])
-        }
+        if (newMsg && newMsg.match_id === matchId) setMessages(prev => [...prev, newMsg])
         loadConversations(myClubId)
       }).subscribe()
     return () => { supabase.removeChannel(channel) }
@@ -129,31 +126,30 @@ export default function MessagesClient() {
       <Navbar />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <div className="flex flex-1 overflow-hidden">
-          {/* INBOX */}
+        <div className="flex flex-1 overflow-hidden border-t">
+          {/* INBOX LIST */}
           <div className="w-80 border-r bg-white flex flex-col">
             <div className="p-4 border-b font-bold text-xl">Inbox</div>
             <div className="flex-1 overflow-y-auto">
               {conversations.map((conv) => {
                 const otherClub = conv.from_club === myClubId ? conv.toClub?.club_name : conv.fromClub?.club_name
                 const otherClubId = conv.from_club === myClubId ? conv.to_club : conv.from_club
-                
-                // UNREAD LOGIC: If latest msg is TO me and is_read is false
                 const isUnread = conv.to_club === myClubId && !conv.is_read
+                const isActive = matchId === conv.match_id
 
                 return (
                   <div
                     key={conv.id}
                     onClick={() => router.push(`/messages?club=${otherClubId}&match=${conv.match_id}`)}
-                    className={`p-4 border-b cursor-pointer transition relative ${matchId === conv.match_id ? "bg-emerald-50 border-r-4 border-r-emerald-600" : "hover:bg-gray-50"}`}
+                    className={`p-4 border-b cursor-pointer transition-all relative
+                      ${isActive ? "bg-emerald-50 border-r-4 border-r-emerald-600" : "hover:bg-slate-50"}
+                    `}
                   >
-                    <div className="flex justify-between items-start">
-                      <p className={`text-sm ${isUnread ? "font-black text-slate-900" : "font-medium text-slate-700"}`}>
+                    <div className="flex justify-between items-center">
+                      <p className={`text-sm ${isUnread ? "font-black text-slate-900" : "font-medium text-slate-500"}`}>
                         {otherClub}
                       </p>
-                      {isUnread && (
-                        <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-                      )}
+                      {isUnread && <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-sm"></span>}
                     </div>
                     <p className={`text-xs truncate mt-1 ${isUnread ? "text-slate-800 font-bold" : "text-slate-400"}`}>
                       {conv.message}
@@ -164,7 +160,7 @@ export default function MessagesClient() {
             </div>
           </div>
 
-          {/* CHAT BOX */}
+          {/* CHAT WINDOW */}
           <div className="flex-1 flex flex-col bg-slate-50">
             {matchId ? (
               <>
@@ -172,7 +168,7 @@ export default function MessagesClient() {
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
                   {messages.map((msg) => (
                     <div key={msg.id} className={`flex ${msg.from_club === myClubId ? "justify-end" : "justify-start"}`}>
-                      <div className={`px-4 py-2 rounded-2xl max-w-[70%] text-sm shadow-sm ${msg.from_club === myClubId ? "bg-[#12372A] text-white rounded-tr-none" : "bg-white text-slate-800 rounded-tl-none border border-slate-200"}`}>
+                      <div className={`px-4 py-2 rounded-2xl max-w-[70%] text-sm shadow-sm ${msg.from_club === myClubId ? "bg-emerald-600 text-white rounded-tr-none" : "bg-white text-slate-800 rounded-tl-none border border-slate-200"}`}>
                         {msg.message}
                       </div>
                     </div>
@@ -187,10 +183,7 @@ export default function MessagesClient() {
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
-                <p className="text-4xl mb-2">🏏</p>
-                <p>Select a club to start coordinating</p>
-              </div>
+              <div className="flex-1 flex flex-col items-center justify-center text-slate-400 font-medium">Select a conversation to start coordinating</div>
             )}
           </div>
         </div>
