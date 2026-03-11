@@ -13,33 +13,61 @@ export default function Sidebar() {
 
   useEffect(()=>{
 
-    async function loadUnread(){
+let clubId:string | null = null
 
-      const { data:userData } = await supabase.auth.getUser()
+async function init(){
 
-      if(!userData?.user) return
+  const { data:userData } = await supabase.auth.getUser()
 
-      const { data:club } = await supabase
-      .from("clubs")
-      .select("id")
-      .eq("created_by",userData.user.id)
-      .single()
+  if(!userData?.user) return
 
-      if(!club) return
+  const { data:club } = await supabase
+  .from("clubs")
+  .select("id")
+  .eq("created_by",userData.user.id)
+  .single()
 
-      const { count } = await supabase
-      .from("messages")
-      .select("*",{ count:"exact", head:true })
-      .eq("to_club",club.id)
-      .eq("is_read",false)
+  if(!club) return
 
-      setUnreadMessages(count || 0)
+  clubId = club.id
 
-    }
+  const { count } = await supabase
+  .from("messages")
+  .select("*",{ count:"exact", head:true })
+  .eq("to_club",club.id)
+  .eq("is_read",false)
 
-    loadUnread()
+  setUnreadMessages(count || 0)
 
-  },[])
+}
+
+init()
+
+const channel = supabase
+.channel("sidebar-unread")
+.on(
+"postgres_changes",
+{ event:"INSERT", schema:"public", table:"messages" },
+(payload)=>{
+
+const msg:any = payload.new
+
+if(msg.to_club === clubId){
+
+setUnreadMessages(prev => prev + 1)
+
+}
+
+})
+.subscribe()
+
+return ()=>{
+
+supabase.removeChannel(channel)
+
+}
+
+},[])
 
   function NavItem({
     label,
