@@ -7,18 +7,18 @@ import Sidebar from "@/components/Sidebar"
 import { useSearchParams, useRouter } from "next/navigation"
 
 type Message = {
-id: string
-message: string
-from_club: string
-to_club: string
-match_id: string
-created_at: string
-is_read: boolean
-fromClub?: { club_name: string }
-toClub?: { club_name: string }
+  id: string
+  message: string
+  from_club: string
+  to_club: string
+  match_id: string
+  created_at: string
+  is_read: boolean
+  fromClub?: { club_name: string }
+  toClub?: { club_name: string }
 }
 
-export default function MessagesClient(){
+export default function MessagesClient() {
 
 const params = useSearchParams()
 const router = useRouter()
@@ -78,6 +78,7 @@ init()
 
 },[matchId])
 
+
 /* LOAD CHAT */
 
 async function loadMessages(currentClubId:string){
@@ -110,12 +111,16 @@ first.from_club===currentClubId
 
 }
 
+/* mark messages read */
+
 await supabase
 .from("messages")
 .update({is_read:true})
 .eq("match_id",matchId)
 .eq("to_club",currentClubId)
 .eq("is_read",false)
+
+/* update local state */
 
 setConversations(prev =>
 prev.map(conv =>
@@ -125,7 +130,12 @@ conv.match_id===matchId
 )
 )
 
+/* reload inbox so refresh shows correct state */
+
+await loadConversations(currentClubId)
+
 }
+
 
 /* LOAD INBOX */
 
@@ -154,6 +164,7 @@ setConversations(Object.values(unique))
 }
 
 }
+
 
 /* REALTIME */
 
@@ -216,11 +227,13 @@ supabase.removeChannel(channel)
 
 },[matchId,myClubId])
 
+
 /* AUTOSCROLL */
 
 useEffect(()=>{
 bottomRef.current?.scrollIntoView({behavior:"smooth"})
 },[messages])
+
 
 /* SEND MESSAGE */
 
@@ -261,11 +274,13 @@ if(textareaRef.current) textareaRef.current.style.height="auto"
 
 }
 
+
 /* LOADING */
 
 if(loading){
 return <div className="p-10 text-center font-bold">Connecting...</div>
 }
+
 
 /* UI */
 
@@ -350,7 +365,8 @@ unread ? "font-bold text-slate-700" : "text-slate-400"
 
 </div>
 
-{/* CHAT */}
+
+{/* CHAT WINDOW */}
 
 <div className="flex-1 flex flex-col bg-slate-50">
 
