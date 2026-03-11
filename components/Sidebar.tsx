@@ -108,7 +108,7 @@ export default function Sidebar() {
           label="Messages"
           path="/messages"
           icon="💬"
-          badge={unreadMessages}
+          badge={unreadMessages > 0 ? unreadMessages : undefined}
         />
 
         <NavItem label="Club Profile" path="/profile" icon="⚙️" />
