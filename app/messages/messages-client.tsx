@@ -126,7 +126,6 @@ conv.match_id===matchId ? {...conv,is_read:true} : conv
 )
 )
 
-await loadConversations(currentClubId)
 
 }
 
