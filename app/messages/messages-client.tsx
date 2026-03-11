@@ -343,11 +343,11 @@ active
 {otherClub}
 </p>
 
-{conv.unread_count && conv.unread_count>0 && (
+{conv.unread_count && conv.unread_count > 0 ? (
 <span className="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full">
 {conv.unread_count}
 </span>
-)}
+) : null}
 
 </div>
 
@@ -380,7 +380,9 @@ unread ? "font-bold text-slate-700" : "text-slate-400"
 
 <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
-{messages.map(msg=>(
+{messages.map(msg=>{
+const isLast = msg.id === messages[messages.length - 1]?.id
+return(
 <div key={msg.id} className={`flex flex-col ${msg.from_club===myClubId?"items-end":"items-start"}`}>
 
 <div className={`px-4 py-2 rounded-2xl text-sm max-w-[70%] ${
@@ -395,8 +397,15 @@ msg.from_club===myClubId
 {formatTime(msg.created_at)}
 </span>
 
+{msg.from_club === myClubId && isLast && msg.is_read && (
+<span className="text-[10px] text-emerald-500 mt-1">
+Seen
+</span>
+)}
+
 </div>
-))}
+)
+})}
 
 <div ref={bottomRef}></div>
 
