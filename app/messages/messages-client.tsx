@@ -177,21 +177,37 @@ const newMsg = payload.new as Message
 
 /* update chat */
 
-if(newMsg.match_id===matchId){
+if(newMsg.match_id === matchId){
 
 setMessages(prev=>{
-if(prev.find(m=>m.id===newMsg.id)) return prev
+if(prev.some(m=>m.id===newMsg.id)) return prev
 return [...prev,newMsg]
 })
 
-/* auto mark read if chat open */
-
+if(newMsg.to_club === myClubId){
 supabase
 .from("messages")
 .update({is_read:true})
 .eq("id",newMsg.id)
+}
 
 }
+
+setConversations(prev => {
+
+const existing = prev.find(c => c.match_id === newMsg.match_id)
+
+if(existing){
+return prev.map(c =>
+c.match_id === newMsg.match_id
+? { ...c, message:newMsg.message, is_read:newMsg.to_club !== myClubId }
+: c
+)
+}
+
+return [newMsg, ...prev]
+
+})
 
 /* refresh inbox */
 
@@ -232,6 +248,14 @@ from_club:myClubId,
 to_club:clubId,
 message:messageText,
 is_read:false
+setConversations(prev =>
+prev.map(conv =>
+conv.match_id===matchId
+? {...conv,is_read:true}
+: conv
+)
+)
+
 })
 .select()
 
@@ -289,7 +313,10 @@ conv.from_club===myClubId
 ? conv.to_club
 : conv.from_club
 
-const unread = conv.to_club===myClubId && !conv.is_read
+const unread =
+conv.to_club === myClubId &&
+!conv.is_read &&
+conv.match_id !== matchId
 const active = matchId===conv.match_id
 
 return(
