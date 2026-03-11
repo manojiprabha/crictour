@@ -13,61 +13,81 @@ export default function Sidebar() {
 
   useEffect(()=>{
 
-let clubId:string | null = null
+    let clubId:string | null = null
 
-async function init(){
+    async function init(){
 
-  const { data:userData } = await supabase.auth.getUser()
+      const { data:userData } = await supabase.auth.getUser()
 
-  if(!userData?.user) return
+      if(!userData?.user) return
 
-  const { data:club } = await supabase
-  .from("clubs")
-  .select("id")
-  .eq("created_by",userData.user.id)
-  .single()
+      const { data:club } = await supabase
+      .from("clubs")
+      .select("id")
+      .eq("created_by",userData.user.id)
+      .single()
 
-  if(!club) return
+      if(!club) return
 
-  clubId = club.id
+      clubId = club.id
 
-  const { count } = await supabase
-  .from("messages")
-  .select("*",{ count:"exact", head:true })
-  .eq("to_club",club.id)
-  .eq("is_read",false)
+      // initial unread count
+      const { count } = await supabase
+      .from("messages")
+      .select("*",{ count:"exact", head:true })
+      .eq("to_club",club.id)
+      .eq("is_read",false)
 
-  setUnreadMessages(count || 0)
+      setUnreadMessages(count || 0)
 
-}
+    }
 
-init()
+    init()
 
-const channel = supabase
-.channel("sidebar-unread")
-.on(
-"postgres_changes",
-{ event:"INSERT", schema:"public", table:"messages" },
-(payload)=>{
+    const channel = supabase
+    .channel("sidebar-unread")
 
-const msg:any = payload.new
+    // new message received
+    .on(
+      "postgres_changes",
+      { event:"INSERT", schema:"public", table:"messages" },
+      (payload)=>{
 
-if(msg.to_club === clubId){
+        const msg:any = payload.new
 
-setUnreadMessages(prev => prev + 1)
+        if(msg.to_club === clubId && !msg.is_read){
+          setUnreadMessages(prev => prev + 1)
+        }
 
-}
+      }
+    )
 
-})
-.subscribe()
+    // message read
+    .on(
+      "postgres_changes",
+      { event:"UPDATE", schema:"public", table:"messages" },
+      async ()=>{
 
-return ()=>{
+        if(!clubId) return
 
-supabase.removeChannel(channel)
+        const { count } = await supabase
+        .from("messages")
+        .select("*",{ count:"exact", head:true })
+        .eq("to_club",clubId)
+        .eq("is_read",false)
 
-}
+        setUnreadMessages(count || 0)
 
-},[])
+      }
+    )
+
+    .subscribe()
+
+    return ()=>{
+      supabase.removeChannel(channel)
+    }
+
+  },[])
 
   function NavItem({
     label,
@@ -101,7 +121,7 @@ supabase.removeChannel(channel)
         </div>
 
         {badge && badge > 0 && (
-          <span className="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full">
+          <span className="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full animate-pulse">
             {badge}
           </span>
         )}
