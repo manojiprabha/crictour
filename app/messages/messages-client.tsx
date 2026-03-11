@@ -163,8 +163,8 @@ map[msg.match_id].unread_count++
 
 setConversations(Object.values(map))
 
-const total = Object.values(map).reduce(
-(sum:any,conv:any)=> sum + (conv.unread_count || 0),
+const total = Object.values(map).reduce<number>(
+(sum,conv:any)=> sum + (conv.unread_count || 0),
 0
 )
 
