@@ -6,7 +6,7 @@ type Props = {
   unreadMessages?: number
 }
 
-export default function Sidebar({ unreadMessages = 0 }: Props) {
+export default function Sidebar({ unreadMessages }: Props) {
 
   const router = useRouter()
   const pathname = usePathname()
@@ -40,11 +40,11 @@ export default function Sidebar({ unreadMessages = 0 }: Props) {
           <span>{label}</span>
         </div>
 
-        {badge && badge > 0 && (
-          <span className="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full animate-pulse">
-            {badge}
-          </span>
-        )}
+        {badge && badge !== 0 ? (
+  <span className="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full animate-pulse">
+    {badge}
+  </span>
+) : null}
       </button>
     )
   }
@@ -72,7 +72,7 @@ export default function Sidebar({ unreadMessages = 0 }: Props) {
           label="Messages"
           path="/messages"
           icon="💬"
-          badge={unreadMessages}
+          badge={unreadMessages && unreadMessages > 0 ? unreadMessages : undefined}
         />
 
         <NavItem label="Club Profile" path="/profile" icon="⚙️" />
