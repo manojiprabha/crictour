@@ -7,18 +7,18 @@ import Sidebar from "@/components/Sidebar"
 import { useSearchParams, useRouter } from "next/navigation"
 
 type Message = {
-  id: string
-  message: string
-  from_club: string
-  to_club: string
-  match_id: string
-  created_at: string
-  is_read: boolean
-  fromClub?: { club_name: string }
-  toClub?: { club_name: string }
+id: string
+message: string
+from_club: string
+to_club: string
+match_id: string
+created_at: string
+is_read: boolean
+fromClub?: { club_name: string }
+toClub?: { club_name: string }
 }
 
-export default function MessagesClient() {
+export default function MessagesClient(){
 
 const params = useSearchParams()
 const router = useRouter()
@@ -41,7 +41,7 @@ const date = new Date(dateString)
 return date.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})
 }
 
-/* ---------------- INIT ---------------- */
+/* INIT */
 
 useEffect(()=>{
 
@@ -61,9 +61,13 @@ const {data:club} = await supabase
 .single()
 
 if(club){
+
 setMyClubId(club.id)
+
 await loadConversations(club.id)
+
 if(matchId) await loadMessages(club.id)
+
 }
 
 setLoading(false)
@@ -74,14 +78,11 @@ init()
 
 },[matchId])
 
-
-/* ---------------- LOAD CHAT ---------------- */
+/* LOAD CHAT */
 
 async function loadMessages(currentClubId:string){
 
 if(!matchId) return
-
-/* load chat */
 
 const {data} = await supabase
 .from("messages")
@@ -109,8 +110,6 @@ first.from_club===currentClubId
 
 }
 
-/* mark as read */
-
 await supabase
 .from("messages")
 .update({is_read:true})
@@ -118,19 +117,17 @@ await supabase
 .eq("to_club",currentClubId)
 .eq("is_read",false)
 
-/* update inbox immediately */
-
 setConversations(prev =>
 prev.map(conv =>
-conv.match_id===matchId ? {...conv,is_read:true} : conv
+conv.match_id===matchId
+? {...conv,is_read:true}
+: conv
 )
 )
-
 
 }
 
-
-/* ---------------- LOAD CONVERSATIONS ---------------- */
+/* LOAD INBOX */
 
 async function loadConversations(clubId:string){
 
@@ -158,8 +155,7 @@ setConversations(Object.values(unique))
 
 }
 
-
-/* ---------------- REALTIME ---------------- */
+/* REALTIME */
 
 useEffect(()=>{
 
@@ -174,43 +170,41 @@ const channel = supabase
 
 const newMsg = payload.new as Message
 
-/* update chat */
-
-if(newMsg.match_id === matchId){
+if(newMsg.match_id===matchId){
 
 setMessages(prev=>{
 if(prev.some(m=>m.id===newMsg.id)) return prev
 return [...prev,newMsg]
 })
 
-if(newMsg.to_club === myClubId){
+if(newMsg.to_club===myClubId){
+
 supabase
 .from("messages")
 .update({is_read:true})
 .eq("id",newMsg.id)
-}
 
 }
 
-setConversations(prev => {
+}
 
-const existing = prev.find(c => c.match_id === newMsg.match_id)
+setConversations(prev=>{
+
+const existing = prev.find(c=>c.match_id===newMsg.match_id)
 
 if(existing){
-return prev.map(c =>
-c.match_id === newMsg.match_id
-? { ...c, message:newMsg.message, is_read:newMsg.to_club !== myClubId }
+
+return prev.map(c=>
+c.match_id===newMsg.match_id
+? {...c,message:newMsg.message,is_read:newMsg.to_club!==myClubId}
 : c
 )
+
 }
 
-return [newMsg, ...prev]
+return [newMsg,...prev]
 
 })
-
-/* refresh inbox */
-
-loadConversations(myClubId)
 
 }
 )
@@ -222,21 +216,20 @@ supabase.removeChannel(channel)
 
 },[matchId,myClubId])
 
-
-/* ---------------- AUTOSCROLL ---------------- */
+/* AUTOSCROLL */
 
 useEffect(()=>{
 bottomRef.current?.scrollIntoView({behavior:"smooth"})
 },[messages])
 
-
-/* ---------------- SEND MESSAGE ---------------- */
+/* SEND MESSAGE */
 
 async function sendMessage(){
 
 if(!newMessage.trim() || !clubId || !matchId || !myClubId) return
 
 const messageText = newMessage
+
 setNewMessage("")
 
 const {data,error} = await supabase
@@ -247,14 +240,6 @@ from_club:myClubId,
 to_club:clubId,
 message:messageText,
 is_read:false
-setConversations(prev =>
-prev.map(conv =>
-conv.match_id===matchId
-? {...conv,is_read:true}
-: conv
-)
-)
-
 })
 .select()
 
@@ -262,21 +247,27 @@ if(!error && data){
 
 setMessages(prev=>[...prev,data[0]])
 
+setConversations(prev =>
+prev.map(conv =>
+conv.match_id===matchId
+? {...conv,message:messageText}
+: conv
+)
+)
+
 }
 
 if(textareaRef.current) textareaRef.current.style.height="auto"
 
 }
 
-
-/* ---------------- LOADING ---------------- */
+/* LOADING */
 
 if(loading){
 return <div className="p-10 text-center font-bold">Connecting...</div>
 }
 
-
-/* ---------------- UI ---------------- */
+/* UI */
 
 return(
 
@@ -313,9 +304,10 @@ conv.from_club===myClubId
 : conv.from_club
 
 const unread =
-conv.to_club === myClubId &&
+conv.to_club===myClubId &&
 !conv.is_read &&
-conv.match_id !== matchId
+conv.match_id!==matchId
+
 const active = matchId===conv.match_id
 
 return(
@@ -332,7 +324,7 @@ active
 
 <div className="flex justify-between items-center">
 
-<p className={`text-sm ${unread ? "font-bold text-slate-900" : "text-slate-500"}`}>
+<p className={`text-sm ${unread?"font-bold text-slate-900":"text-slate-500"}`}>
 {otherClub}
 </p>
 
@@ -358,8 +350,7 @@ unread ? "font-bold text-slate-700" : "text-slate-400"
 
 </div>
 
-
-{/* CHAT WINDOW */}
+{/* CHAT */}
 
 <div className="flex-1 flex flex-col bg-slate-50">
 
@@ -374,13 +365,17 @@ unread ? "font-bold text-slate-700" : "text-slate-400"
 <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
 {messages.map(msg=>(
+
 <div key={msg.id} className={`flex flex-col ${msg.from_club===myClubId?"items-end":"items-start"}`}>
+
 <div className={`px-4 py-2 rounded-2xl text-sm max-w-[70%] ${
 msg.from_club===myClubId
 ? "bg-emerald-600 text-white"
 : "bg-white border border-slate-200 text-slate-800"
 }`}>
+
 {msg.message}
+
 </div>
 
 <span className="text-[10px] text-slate-400 mt-1">
@@ -388,6 +383,7 @@ msg.from_club===myClubId
 </span>
 
 </div>
+
 ))}
 
 <div ref={bottomRef}></div>
@@ -447,4 +443,5 @@ Select a conversation to start coordinating
 </div>
 
 )
+
 }
