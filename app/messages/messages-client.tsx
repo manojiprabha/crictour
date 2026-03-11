@@ -30,6 +30,7 @@ const matchId = params.get("match")
 
 const [messages,setMessages] = useState<Message[]>([])
 const [conversations,setConversations] = useState<Conversation[]>([])
+const [totalUnread,setTotalUnread] = useState(0)
 const [chatClubName,setChatClubName] = useState("")
 const [newMessage,setNewMessage] = useState("")
 const [myClubId,setMyClubId] = useState<string | null>(null)
@@ -161,6 +162,13 @@ map[msg.match_id].unread_count++
 })
 
 setConversations(Object.values(map))
+
+const total = Object.values(map).reduce(
+(sum:any,conv:any)=> sum + (conv.unread_count || 0),
+0
+)
+
+setTotalUnread(total)
 
 }
 
@@ -296,7 +304,7 @@ return(
 
 <div className="flex flex-1 overflow-hidden">
 
-<Sidebar/>
+<Sidebar unreadMessages={totalUnread}/>
 
 <div className="flex flex-1 overflow-hidden border-t border-slate-200">
 
