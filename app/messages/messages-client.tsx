@@ -304,7 +304,7 @@ return(
 
 <div className="flex flex-1 overflow-hidden">
 
-<Sidebar unreadMessages={totalUnread}/>
+<Sidebar/>
 
 <div className="flex flex-1 overflow-hidden border-t border-slate-200">
 
