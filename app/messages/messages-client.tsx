@@ -306,11 +306,11 @@ return(
 
 <Sidebar/>
 
-<div className="flex flex-1 overflow-hidden border-t border-slate-200">
+<div className="flex flex-col md:flex-row flex-1 overflow-hidden border-t border-slate-200">
 
 {/* INBOX */}
 
-<div className="w-80 border-r bg-white flex flex-col">
+<div className="w-full md:w-80 border-r bg-white flex flex-col">
 
 <div className="p-4 border-b font-bold text-slate-800">
 Inbox
@@ -377,7 +377,7 @@ unread ? "font-bold text-slate-700" : "text-slate-400"
 
 {/* CHAT */}
 
-<div className="flex-1 flex flex-col bg-slate-50">
+<div className="flex-1 flex flex-col bg-slate-50 w-full">
 
 {matchId ? (
 
