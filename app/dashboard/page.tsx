@@ -2,16 +2,17 @@
 
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
+import MobileNav from "@/components/MobileNav"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 
 type Match = {
- id:string
- club_name:string
- match_date:string
- format:string
- city:string
+  id:string
+  club_name:string
+  match_date:string
+  format:string
+  city:string
 }
 
 export default function Dashboard(){
@@ -110,21 +111,22 @@ Open →
 
 return(
 
-<div className="min-h-screen bg-slate-50">
+<div className="min-h-screen bg-slate-50 flex flex-col">
 
 <Navbar/>
 
-<div className="flex flex-col md:flex-row">
+<div className="flex flex-1 flex-col md:flex-row">
 
+{/* Sidebar visible only on desktop */}
 <Sidebar/>
 
-<div className="flex-1 p-4 md:p-8">
+<div className="flex-1 p-4 md:p-8 pb-24">
 
-<div className="max-w-6xl">
+<div className="max-w-6xl mx-auto">
 
 <header className="mb-10">
 
-<h1 className="text-3xl font-bold text-slate-900">
+<h1 className="text-2xl md:text-3xl font-bold text-slate-900">
 Welcome back {clubName} 🏏
 </h1>
 
@@ -223,6 +225,9 @@ View
 </div>
 
 </div>
+
+{/* Mobile bottom navigation */}
+<MobileNav/>
 
 </div>
 

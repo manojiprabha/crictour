@@ -134,7 +134,7 @@ export default function Sidebar() {
 
   return (
 
-    <div className="w-full md:w-64 bg-white border-r md:h-screen sticky top-0 p-4 md:p-6 flex flex-col shadow-sm">
+    <div className="hidden md:flex w-64 bg-white border-r h-screen sticky top-0 p-6 flex-col shadow-sm">
 
       <h2 className="text-[10px] font-black tracking-widest text-slate-400 mb-8 uppercase">
         Navigation
