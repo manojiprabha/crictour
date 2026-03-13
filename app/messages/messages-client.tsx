@@ -298,7 +298,7 @@ return <div className="p-10 text-center font-bold">Connecting...</div>
 
 return(
 
-<div className="flex flex-col h-screen bg-white overflow-hidden">
+<div className="flex flex-col h-[100dvh] bg-white overflow-hidden">
 
 <Navbar/>
 
@@ -310,7 +310,7 @@ return(
 
 {/* INBOX */}
 
-<div className="w-full md:w-80 border-r bg-white flex flex-col">
+<div className={`w-full md:w-80 border-r bg-white flex flex-col ${matchId ? "hidden md:flex" : ""}`}>
 
 <div className="p-4 border-b font-bold text-slate-800">
 Inbox
@@ -396,7 +396,7 @@ onClick={()=>router.push("/messages")}
 </div>
 
 
-<div className="flex-1 overflow-y-auto p-6 space-y-6">
+<div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 pb-32">
 
 {messages.map(msg=>{
 const isLast = msg.id === messages[messages.length - 1]?.id
