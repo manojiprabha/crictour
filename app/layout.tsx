@@ -1,4 +1,5 @@
 import "./globals.css"
+import MobileNav from "@/components/MobileNav"
 import { Inter } from "next/font/google"
 
 const inter = Inter({ subsets:["latin"] })
@@ -16,15 +17,16 @@ export default function RootLayout({
 
 return(
 
-<html lang="en">
+<html>
+  <body className="min-h-screen">
 
-<body className={inter.className}>
+    {children}
 
-{children}
+    <MobileNav/>
 
-</body>
-
+  </body>
 </html>
+
 
 )
 

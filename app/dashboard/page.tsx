@@ -226,8 +226,6 @@ View
 
 </div>
 
-{/* Mobile bottom navigation */}
-<MobileNav/>
 
 </div>
 
