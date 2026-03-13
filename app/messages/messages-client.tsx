@@ -382,9 +382,19 @@ unread ? "font-bold text-slate-700" : "text-slate-400"
 {matchId ? (
 
 <>
-<div className="p-4 bg-white border-b font-bold text-slate-800">
+<div className="p-4 bg-white border-b flex items-center gap-3 font-bold text-slate-800">
+
+<button
+className="md:hidden text-lg"
+onClick={()=>router.push("/messages")}
+>
+←
+</button>
+
 {chatClubName}
+
 </div>
+
 
 <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
@@ -419,7 +429,7 @@ Seen
 
 </div>
 
-<div className="p-4 bg-white border-t border-slate-200">
+<div className="p-4 bg-white border-t border-slate-200 pb-24 md:pb-4">
 
 <div className="flex items-end gap-3 max-w-4xl mx-auto">
 
