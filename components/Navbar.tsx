@@ -58,7 +58,7 @@ router.push("/")
 
 return(
 
-<div className="w-full bg-[#12372A] text-white px-8 py-4 flex justify-between items-center">
+<div className="w-full bg-[#12372A] text-white px-4 md:px-8 py-4 flex justify-between items-center">
 
 <div
 className="font-bold text-lg cursor-pointer"

@@ -114,11 +114,11 @@ return(
 
 <Navbar/>
 
-<div className="flex">
+<div className="flex flex-col md:flex-row">
 
 <Sidebar/>
 
-<div className="flex-1 p-8">
+<div className="flex-1 p-4 md:p-8">
 
 <div className="max-w-6xl">
 
@@ -165,7 +165,7 @@ path="/tours/post"
 
 {/* RECENT MATCHES */}
 
-<div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+<div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
 
 <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
 
