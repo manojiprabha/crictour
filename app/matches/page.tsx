@@ -7,149 +7,149 @@ import Sidebar from "@/components/Sidebar"
 import { useRouter } from "next/navigation"
 
 type Match = {
- id:string
- club_name:string
- city:string
- match_type:string
- format:string
- match_date:string
- description:string
+    id: string
+    club_name: string
+    city: string
+    match_type: string
+    format: string
+    match_date: string
+    description: string
 }
 
-export default function MatchesPage(){
+export default function MatchesPage() {
 
-const router = useRouter()
-const [matches,setMatches] = useState<Match[]>([])
+    const router = useRouter()
+    const [matches, setMatches] = useState<Match[]>([])
 
-useEffect(()=>{
+    useEffect(() => {
 
-async function loadMatches(){
+        async function loadMatches() {
 
-const { data } = await supabase
-.from("matches")
-.select("*")
-.order("match_date",{ascending:true})
+            const { data } = await supabase
+                .from("matches")
+                .select("*")
+                .order("match_date", { ascending: true })
 
-if(data){
-setMatches(data)
-}
+            if (data) {
+                setMatches(data)
+            }
 
-}
+        }
 
-loadMatches()
+        loadMatches()
 
-},[])
-
-
-async function expressInterest(matchId:string){
-
-const { data:userData } = await supabase.auth.getUser()
-const user = userData?.user
-
-if(!user){
-alert("Login required")
-return
-}
-
-const { data:club } = await supabase
-.from("clubs")
-.select("id")
-.eq("created_by",user.id)
-.single()
-
-if(!club){
-alert("Club not found")
-return
-}
-
-const { error } = await supabase
-.from("match_interests")
-.insert({
-match_id:matchId,
-club_id:club.id
-})
-
-if(error){
-alert(error.message)
-return
-}
-
-alert("Interest sent!")
-
-}
+    }, [])
 
 
-return(
+    async function expressInterest(matchId: string) {
 
-<div className="min-h-screen bg-slate-50">
+        const { data: userData } = await supabase.auth.getUser()
+        const user = userData?.user
 
-<Navbar/>
+        if (!user) {
+            alert("Login required")
+            return
+        }
 
-<div className="flex">
+        const { data: club } = await supabase
+            .from("clubs")
+            .select("id")
+            .eq("created_by", user.id)
+            .single()
 
-<Sidebar/>
+        if (!club) {
+            alert("Club not found")
+            return
+        }
 
-<div className="flex-1 p-10">
+        const { error } = await supabase
+            .from("match_interests")
+            .insert({
+                match_id: matchId,
+                club_id: club.id
+            })
 
-<h1 className="text-3xl font-bold mb-8">
-Match Board
-</h1>
+        if (error) {
+            alert(error.message)
+            return
+        }
 
-<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        alert("Interest sent!")
 
-{matches.map((match)=>(
+    }
 
-<div
-key={match.id}
-className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition"
->
 
-<h3 className="text-lg font-bold mb-2">
-{match.club_name}
-</h3>
+    return (
 
-<p className="text-sm text-slate-500 mb-1">
-{match.city}
-</p>
+        <div className="min-h-screen bg-slate-50">
 
-<p className="text-sm text-slate-500 mb-2">
-{match.match_date} • {match.format}
-</p>
+            <Navbar />
 
-<p className="text-sm text-slate-600 mb-4">
-{match.description}
-</p>
+            <div className="flex">
 
-<div className="flex gap-2">
+                <Sidebar />
 
-<button
-onClick={()=>router.push(`/matches/${match.id}`)}
-className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-50"
->
-View
-</button>
+                <div className="flex-1 p-10">
 
-<button
-onClick={()=>expressInterest(match.id)}
-className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700"
->
-I'm Interested
-</button>
+                    <h1 className="text-3xl font-bold mb-8">
+                        Match Board
+                    </h1>
 
-</div>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-</div>
+                        {matches.map((match) => (
 
-))}
+                            <div
+                                key={match.id}
+                                className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition"
+                            >
 
-</div>
+                                <h3 className="text-lg font-bold mb-2">
+                                    {match.club_name}
+                                </h3>
 
-</div>
+                                <p className="text-sm text-slate-500 mb-1">
+                                    {match.city}
+                                </p>
 
-</div>
+                                <p className="text-sm text-slate-500 mb-2">
+                                    {match.match_date} • {match.format}
+                                </p>
 
-</div>
+                                <p className="text-sm text-slate-600 mb-4">
+                                    {match.description}
+                                </p>
 
-)
+                                <div className="flex gap-2">
+
+                                    <button
+                                        onClick={() => router.push(`/matches/${match.id}`)}
+                                        className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-50"
+                                    >
+                                        View
+                                    </button>
+
+                                    <button
+                                        onClick={() => expressInterest(match.id)}
+                                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700"
+                                    >
+                                        I'm Interested
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        ))}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    )
 
 }

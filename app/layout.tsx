@@ -1,6 +1,9 @@
 import "./globals.css"
 import MobileNav from "@/components/MobileNav"
-import { Inter } from "next/font/google"
+import { Inter, Figtree } from "next/font/google"
+import { cn } from "@/lib/utils";
+
+const figtree = Figtree({subsets:['latin'],variable:'--font-sans'});
 
 const inter = Inter({ subsets:["latin"] })
 
@@ -17,7 +20,7 @@ export default function RootLayout({
 
 return(
 
-<html>
+<html className={cn("font-sans", figtree.variable)}>
   <body className="min-h-screen">
 
     {children}
