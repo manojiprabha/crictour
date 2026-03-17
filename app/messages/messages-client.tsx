@@ -153,33 +153,29 @@ export default function MessagesPage() {
     setConversations(convs)
   }
 
-  /* ---------------- FILTER CHAT ---------------- */
+  /* ---------------- FIXED CHAT FILTER ---------------- */
 
   const chatMessages = messages.filter((msg) => {
 
-    if (!selectedClub || !matchId) return false
+    if (!selectedClub) return false
 
     return (
-      msg.match_id === matchId &&
-      (
-        (msg.from_club === myClubId && msg.to_club === selectedClub) ||
-        (msg.from_club === selectedClub && msg.to_club === myClubId)
-      )
+      (msg.from_club === myClubId && msg.to_club === selectedClub) ||
+      (msg.from_club === selectedClub && msg.to_club === myClubId)
     )
   })
 
-  /* ---------------- MARK AS READ ---------------- */
+  /* ---------------- FIXED MARK AS READ ---------------- */
 
   useEffect(() => {
 
-    if (!selectedClub || !matchId || !myClubId) return
+    if (!selectedClub || !myClubId) return
 
     async function markRead() {
 
       await supabase
         .from("messages")
         .update({ is_read: true })
-        .eq("match_id", matchId)
         .eq("to_club", myClubId)
         .eq("from_club", selectedClub)
         .eq("is_read", false)
@@ -188,7 +184,7 @@ export default function MessagesPage() {
 
     markRead()
 
-  }, [selectedClub, matchId, myClubId])
+  }, [selectedClub, myClubId])
 
   /* ---------------- SEND MESSAGE ---------------- */
 
