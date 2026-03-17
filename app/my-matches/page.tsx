@@ -6,122 +6,152 @@ import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
 
 type Match = {
-id:string
-club_name:string
-match_date:string
-format:string
-match_type:string
+  id: string
+  club_name: string
+  city: string
+  match_date: string
+  format: string
 }
 
-export default function MyMatches(){
+export default function MyMatches() {
 
-const [matches,setMatches] = useState<Match[]>([])
+  const [upcoming, setUpcoming] = useState<Match[]>([])
+  const [past, setPast] = useState<Match[]>([])
+  const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming")
 
-useEffect(() => {
+  useEffect(() => {
 
-  async function loadMatches() {
+    async function loadMatches() {
 
-    const { data: userData } = await supabase.auth.getUser()
-    const user = userData?.user
+      const { data: userData } = await supabase.auth.getUser()
+      const user = userData?.user
 
-    if (!user) return
+      if (!user) return
 
-    // ✅ get club id first
-    const { data: club } = await supabase
-      .from("clubs")
-      .select("id")
-      .eq("created_by", user.id)
-      .single()
+      const { data: club } = await supabase
+        .from("clubs")
+        .select("id")
+        .eq("created_by", user.id)
+        .single()
 
-    if (!club) return
+      if (!club) return
 
-    const today = new Date().toISOString().split("T")[0]
+      const today = new Date().toISOString().split("T")[0]
 
-    // ✅ now fetch matches
-    const { data } = await supabase
-      .from("matches")
-      .select("*")
-      .eq("club_id", club.id)   // ✅ FIXED
-      .gte("match_date", today)
-      .order("match_date", { ascending: true })
+      // ✅ upcoming matches
+      const { data: upcomingData } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("club_id", club.id)
+        .gte("match_date", today)
+        .order("match_date", { ascending: true })
 
-    if (data) {
-      setMatches(data)
+      // ✅ past matches
+      const { data: pastData } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("club_id", club.id)
+        .lt("match_date", today)
+        .order("match_date", { ascending: false })
+
+      if (upcomingData) setUpcoming(upcomingData)
+      if (pastData) setPast(pastData)
+
     }
 
+    loadMatches()
+
+  }, [])
+
+  function MatchCard({ match }: { match: Match }) {
+    return (
+      <div className="border rounded-xl p-4 flex justify-between items-center hover:bg-slate-50 transition">
+        <div>
+          <p className="font-semibold text-slate-900">
+            {match.match_date} • {match.format}
+          </p>
+          <p className="text-sm text-slate-500">
+            {match.club_name} • {match.city}
+          </p>
+        </div>
+      </div>
+    )
   }
 
-  loadMatches()
+  return (
 
-}, [])
+    <div className="min-h-screen bg-slate-50">
 
-async function deleteMatch(id:string){
+      <Navbar />
 
-await supabase
-.from("matches")
-.delete()
-.eq("id",id)
+      <div className="flex flex-col md:flex-row">
 
-setMatches(matches.filter(m=>m.id!==id))
+        <Sidebar />
 
-}
+        <div className="flex-1 p-4 md:p-8 pb-20">
 
-return(
+          <h1 className="text-2xl font-bold mb-6">
+            My Matches
+          </h1>
 
-<div className="min-h-screen bg-slate-50">
+          {/* ✅ TABS */}
+          <div className="flex gap-4 mb-6">
+            <button
+              onClick={() => setActiveTab("upcoming")}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                activeTab === "upcoming"
+                  ? "bg-emerald-600 text-white"
+                  : "bg-white border text-slate-600"
+              }`}
+            >
+              Upcoming ({upcoming.length})
+            </button>
 
-<Navbar/>
+            <button
+              onClick={() => setActiveTab("past")}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                activeTab === "past"
+                  ? "bg-emerald-600 text-white"
+                  : "bg-white border text-slate-600"
+              }`}
+            >
+              Past ({past.length})
+            </button>
+          </div>
 
-<div className="flex">
+          {/* ✅ LIST */}
+          <div className="space-y-3">
 
-<Sidebar/>
+            {activeTab === "upcoming" &&
+              (upcoming.length > 0 ? (
+                upcoming.map(match => (
+                  <MatchCard key={match.id} match={match} />
+                ))
+              ) : (
+                <p className="text-slate-400 text-sm">
+                  No upcoming matches
+                </p>
+              ))
+            }
 
-<div className="flex-1 p-10">
+            {activeTab === "past" &&
+              (past.length > 0 ? (
+                past.map(match => (
+                  <MatchCard key={match.id} match={match} />
+                ))
+              ) : (
+                <p className="text-slate-400 text-sm">
+                  No past matches
+                </p>
+              ))
+            }
 
-<h1 className="text-3xl font-bold mb-8">
-My Matches
-</h1>
+          </div>
 
-<div className="space-y-4">
+        </div>
 
-{matches.map((match)=>(
+      </div>
 
-<div
-key={match.id}
-className="bg-white border rounded-lg p-4 flex justify-between"
->
-
-<div>
-
-<p className="font-semibold">
-{match.match_date}
-</p>
-
-<p className="text-sm text-slate-500">
-{match.format} • {match.match_type}
-</p>
-
-</div>
-
-<button
-onClick={()=>deleteMatch(match.id)}
-className="text-red-500"
->
-Delete
-</button>
-
-</div>
-
-))}
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-)
-
+    </div>
+  )
 }
