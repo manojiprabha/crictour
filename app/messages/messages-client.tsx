@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { supabase } from "@/lib/supabase"
 import { useSearchParams, useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
@@ -38,12 +38,12 @@ export default function MessagesPage() {
   const [clubMap, setClubMap] = useState<Record<string,string>>({})
   const [newMessage, setNewMessage] = useState("")
 
+  const bottomRef = useRef<HTMLDivElement | null>(null)
+
   /* ---------------- INIT ---------------- */
 
   useEffect(() => {
-
     async function init() {
-
       const { data:userData } = await supabase.auth.getUser()
       if (!userData?.user) return
 
@@ -57,15 +57,12 @@ export default function MessagesPage() {
     }
 
     init()
-
   }, [])
 
   /* ---------------- LOAD CLUB NAMES ---------------- */
 
   useEffect(() => {
-
     async function loadClubs() {
-
       const { data } = await supabase
         .from("clubs")
         .select("id, club_name")
@@ -82,31 +79,26 @@ export default function MessagesPage() {
     }
 
     loadClubs()
-
   }, [])
 
   /* ---------------- FETCH MESSAGES ---------------- */
 
-  useEffect(() => {
+  async function fetchMessages() {
+    const { data } = await supabase
+      .from("messages")
+      .select("*")
+      .or(`from_club.eq.${myClubId},to_club.eq.${myClubId}`)
+      .order("created_at", { ascending: true })
 
-    if (!myClubId) return
-
-    async function loadMessages() {
-
-      const { data } = await supabase
-        .from("messages")
-        .select("*")
-        .or(`from_club.eq.${myClubId},to_club.eq.${myClubId}`)
-        .order("created_at", { ascending: true })
-
-      if (data) {
-        setMessages(data)
-        buildConversations(data)
-      }
+    if (data) {
+      setMessages(data)
+      buildConversations(data)
     }
+  }
 
-    loadMessages()
-
+  useEffect(() => {
+    if (!myClubId) return
+    fetchMessages()
   }, [myClubId])
 
   /* ---------------- BUILD CONVERSATIONS ---------------- */
@@ -153,7 +145,7 @@ export default function MessagesPage() {
     setConversations(convs)
   }
 
-  /* ---------------- FIXED CHAT FILTER ---------------- */
+  /* ---------------- CHAT FILTER (FIXED) ---------------- */
 
   const chatMessages = messages.filter((msg) => {
 
@@ -165,7 +157,7 @@ export default function MessagesPage() {
     )
   })
 
-  /* ---------------- FIXED MARK AS READ ---------------- */
+  /* ---------------- MARK AS READ + REFRESH ---------------- */
 
   useEffect(() => {
 
@@ -180,11 +172,18 @@ export default function MessagesPage() {
         .eq("from_club", selectedClub)
         .eq("is_read", false)
 
+      await fetchMessages() // ✅ instant UI update
     }
 
     markRead()
 
   }, [selectedClub, myClubId])
+
+  /* ---------------- AUTO SCROLL ---------------- */
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [chatMessages])
 
   /* ---------------- SEND MESSAGE ---------------- */
 
@@ -201,18 +200,7 @@ export default function MessagesPage() {
     })
 
     setNewMessage("")
-
-    const { data } = await supabase
-      .from("messages")
-      .select("*")
-      .or(`from_club.eq.${myClubId},to_club.eq.${myClubId}`)
-      .order("created_at", { ascending: true })
-
-    if (data) {
-      setMessages(data)
-      buildConversations(data)
-    }
-
+    await fetchMessages()
   }
 
   /* ---------------- UI ---------------- */
@@ -269,7 +257,7 @@ export default function MessagesPage() {
 
         {/* CHAT AREA */}
 
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col h-[calc(100vh-64px)]">
 
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
 
@@ -287,6 +275,8 @@ export default function MessagesPage() {
               </div>
 
             ))}
+
+            <div ref={bottomRef} />
 
           </div>
 
