@@ -17,40 +17,43 @@ export default function MyMatches(){
 
 const [matches,setMatches] = useState<Match[]>([])
 
-useEffect(()=>{
+useEffect(() => {
 
-async function loadMatches(){
+  async function loadMatches() {
 
-const { data:userData } = await supabase.auth.getUser()
+    const { data: userData } = await supabase.auth.getUser()
+    const user = userData?.user
 
-const user = userData?.user
+    if (!user) return
 
-if(!user) return
+    // ✅ get club id first
+    const { data: club } = await supabase
+      .from("clubs")
+      .select("id")
+      .eq("created_by", user.id)
+      .single()
 
-const { data:club } = await supabase
-.from("clubs")
-.select("*")
-.eq("created_by",user.id)
-.single()
+    if (!club) return
 
-if(!club) return
+    const today = new Date().toISOString().split("T")[0]
 
-const today = new Date().toISOString().split("T")[0]
+    // ✅ now fetch matches
+    const { data } = await supabase
+      .from("matches")
+      .select("*")
+      .eq("club_id", club.id)   // ✅ FIXED
+      .gte("match_date", today)
+      .order("match_date", { ascending: true })
 
-const { data } = await supabase
-  .from("matches")
-  .select("*")
-  .eq("club_id", myClubId)
-  .gte("match_date", today)   // ✅ filter
-  .order("match_date", { ascending: true })
+    if (data) {
+      setMatches(data)
+    }
 
-if(data) setMatches(data)
+  }
 
-}
+  loadMatches()
 
-loadMatches()
-
-},[])
+}, [])
 
 async function deleteMatch(id:string){
 
