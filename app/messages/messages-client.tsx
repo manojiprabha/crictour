@@ -88,10 +88,12 @@ export default function MessagesClient() {
         fromClub:clubs!messages_from_club_fkey (club_name),
         toClub:clubs!messages_to_club_fkey (club_name)
       `)
-      .eq("match_id", matchId)
-      .or(
-        `and(from_club.eq.${currentClubId},to_club.eq.${otherClubId}),and(from_club.eq.${otherClubId},to_club.eq.${currentClubId})`
-      )
+
+        .or(
+          `and(from_club.eq.${myClubId},to_club.eq.${otherClubId}),and(from_club.eq.${otherClubId},to_club.eq.${myClubId})`
+            )
+          .eq("match_id", matchId)
+          
       .order("created_at", { ascending: true })
 
     if (data) {
