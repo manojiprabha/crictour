@@ -35,10 +35,14 @@ const { data:club } = await supabase
 
 if(!club) return
 
+const today = new Date().toISOString().split("T")[0]
+
 const { data } = await supabase
-.from("matches")
-.select("*")
-.eq("club_name",club.club_name)
+  .from("matches")
+  .select("*")
+  .eq("club_id", myClubId)
+  .gte("match_date", today)   // ✅ filter
+  .order("match_date", { ascending: true })
 
 if(data) setMatches(data)
 

@@ -53,11 +53,14 @@ checkClub()
 
 async function loadMatches(){
 
+const today = new Date().toISOString().split("T")[0]
+
 const { data } = await supabase
-.from("matches")
-.select("*")
-.order("created_at",{ascending:false})
-.limit(4)
+  .from("matches")
+  .select("*")
+  .gte("match_date", today)   // ✅ filter future only
+  .order("match_date", { ascending: true })
+  .limit(4)
 
 if(data){
 setMatches(data)
