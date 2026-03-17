@@ -409,12 +409,27 @@ export default function MessagesClient() {
 
                   <div className="flex gap-2">
 
-                    <input
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      className="flex-1 border rounded-xl p-2"
-                      placeholder="Type..."
-                    />
+                    <textarea
+                        value={newMessage}
+                        onChange={(e) => {
+                        setNewMessage(e.target.value)
+
+                    // auto resize
+                        e.target.style.height = "auto"
+                        e.target.style.height = e.target.scrollHeight + "px"
+                        }}
+                        onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault()
+                        if (newMessage.trim()) {
+                        sendMessage()
+                        }
+                        }
+  }}
+  rows={1}
+  placeholder="Type message..."
+  className="flex-1 border rounded-xl p-2 resize-none outline-none focus:ring-1 focus:ring-emerald-500 text-sm max-h-32"
+/>
 
                     <button
                       onClick={sendMessage}
