@@ -40,6 +40,7 @@ export default function MessagesClient() {
   /* ---------------- INIT ---------------- */
 
   useEffect(() => {
+
     async function init() {
 
       const { data: userData } = await supabase.auth.getUser()
@@ -61,10 +62,10 @@ export default function MessagesClient() {
 
         await loadConversations(club.id)
 
+        // ✅ load chat ONLY when both exist
         if (matchId && clubId) {
           await loadMessages(club.id, clubId)
         }
-
       }
 
       setLoading(false)
@@ -78,7 +79,7 @@ export default function MessagesClient() {
 
   async function loadMessages(currentClubId: string, otherClubId: string) {
 
-    if (!matchId) return
+    if (!matchId || !currentClubId || !otherClubId) return
 
     const { data } = await supabase
       .from("messages")
@@ -88,10 +89,9 @@ export default function MessagesClient() {
         toClub:clubs!messages_to_club_fkey (club_name)
       `)
       .eq("match_id", matchId)
-      .or(`
-        and(from_club.eq.${currentClubId},to_club.eq.${otherClubId}),
-        and(from_club.eq.${otherClubId},to_club.eq.${currentClubId})
-      `)
+      .or(
+        `and(from_club.eq.${currentClubId},to_club.eq.${otherClubId}),and(from_club.eq.${otherClubId},to_club.eq.${currentClubId})`
+      )
       .order("created_at", { ascending: true })
 
     if (data) {
@@ -107,9 +107,9 @@ export default function MessagesClient() {
             : first.fromClub?.club_name || ""
         )
       }
-
     }
 
+    // mark read
     await supabase
       .from("messages")
       .update({ is_read: true })
@@ -144,7 +144,7 @@ export default function MessagesClient() {
 
       const key = msg.match_id + "-" + otherId
 
-      // ✅ latest message only
+      // latest only
       if (!map[key]) {
         map[key] = { ...msg, unread_count: 0 }
       }
@@ -188,7 +188,7 @@ export default function MessagesClient() {
 
           const key = newMsg.match_id + "-" + otherId
 
-          /* CHAT WINDOW */
+          /* CHAT */
 
           if (newMsg.match_id === matchId && clubId) {
 
@@ -239,7 +239,6 @@ export default function MessagesClient() {
                 unread_count: unread
               }
 
-              // move to top
               const [item] = updated.splice(index, 1)
               return [item, ...updated]
             }
