@@ -432,10 +432,11 @@ export default function MessagesClient() {
 />
 
                     <button
-                      onClick={sendMessage}
-                      className="bg-emerald-600 text-white px-4 rounded-xl"
-                    >
-                      Send
+                        onClick={sendMessage}
+                        disabled={!newMessage.trim()}
+                        className="bg-emerald-600 text-white px-4 rounded-xl disabled:opacity-50"
+                        >
+                        Send
                     </button>
 
                   </div>
