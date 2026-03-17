@@ -30,7 +30,6 @@ const matchId = params.get("match")
 
 const [messages,setMessages] = useState<Message[]>([])
 const [conversations,setConversations] = useState<Conversation[]>([])
-const [totalUnread,setTotalUnread] = useState(0)
 const [chatClubName,setChatClubName] = useState("")
 const [newMessage,setNewMessage] = useState("")
 const [myClubId,setMyClubId] = useState<string | null>(null)
@@ -44,7 +43,7 @@ const date=new Date(dateString)
 return date.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})
 }
 
-/* INIT */
+/* ---------------- INIT ---------------- */
 
 useEffect(()=>{
 
@@ -69,7 +68,9 @@ setMyClubId(club.id)
 
 await loadConversations(club.id)
 
-if(matchId) await loadMessages(club.id)
+if(matchId && clubId){
+await loadMessages(club.id, clubId)
+}
 
 }
 
@@ -79,11 +80,11 @@ setLoading(false)
 
 init()
 
-},[matchId])
+},[matchId, clubId])
 
-/* LOAD CHAT */
+/* ---------------- LOAD CHAT ---------------- */
 
-async function loadMessages(currentClubId:string){
+async function loadMessages(currentClubId:string, otherClubId:string){
 
 if(!matchId) return
 
@@ -95,6 +96,10 @@ fromClub:clubs!messages_from_club_fkey (club_name),
 toClub:clubs!messages_to_club_fkey (club_name)
 `)
 .eq("match_id",matchId)
+.or(`
+and(from_club.eq.${currentClubId},to_club.eq.${otherClubId}),
+and(from_club.eq.${otherClubId},to_club.eq.${currentClubId})
+`)
 .order("created_at",{ascending:true})
 
 if(data){
@@ -113,25 +118,21 @@ first.from_club===currentClubId
 
 }
 
+/* mark read */
+
 await supabase
 .from("messages")
 .update({is_read:true})
 .eq("match_id",matchId)
 .eq("to_club",currentClubId)
 
-setConversations(prev =>
-prev.map(conv =>
-conv.match_id===matchId
-? {...conv,unread_count:0}
-: conv
-)
-)
+/* reload inbox */
 
 await loadConversations(currentClubId)
 
 }
 
-/* LOAD INBOX */
+/* ---------------- LOAD INBOX ---------------- */
 
 async function loadConversations(clubId:string){
 
@@ -151,28 +152,26 @@ const map:any={}
 
 data.forEach(msg=>{
 
-if(!map[msg.match_id]){
-map[msg.match_id]={...msg,unread_count:0}
+const otherId =
+msg.from_club===clubId ? msg.to_club : msg.from_club
+
+const key = msg.match_id + "-" + otherId
+
+if(!map[key]){
+map[key]={...msg,unread_count:0}
 }
 
 if(msg.to_club===clubId && !msg.is_read){
-map[msg.match_id].unread_count++
+map[key].unread_count++
 }
 
 })
 
 setConversations(Object.values(map))
 
-const total = Object.values(map).reduce<number>(
-(sum,conv:any)=> sum + (conv.unread_count || 0),
-0
-)
-
-setTotalUnread(total)
-
 }
 
-/* REALTIME */
+/* ---------------- REALTIME ---------------- */
 
 useEffect(()=>{
 
@@ -187,7 +186,20 @@ const channel=supabase
 
 const newMsg=payload.new as Message
 
-if(newMsg.match_id===matchId){
+const otherId =
+newMsg.from_club===myClubId ? newMsg.to_club : newMsg.from_club
+
+const key = newMsg.match_id + "-" + otherId
+
+/* update chat */
+
+if(newMsg.match_id===matchId && clubId){
+
+const isRelevant =
+(newMsg.from_club===myClubId && newMsg.to_club===clubId) ||
+(newMsg.from_club===clubId && newMsg.to_club===myClubId)
+
+if(isRelevant){
 
 setMessages(prev=>{
 if(prev.some(m=>m.id===newMsg.id)) return prev
@@ -195,25 +207,30 @@ return [...prev,newMsg]
 })
 
 if(newMsg.to_club===myClubId){
-
-supabase
-.from("messages")
-.update({is_read:true})
-.eq("id",newMsg.id)
+supabase.from("messages").update({is_read:true}).eq("id",newMsg.id)
+}
 
 }
 
 }
+
+/* update inbox */
 
 setConversations(prev=>{
 
-const existing=prev.find(c=>c.match_id===newMsg.match_id)
+const existing = prev.find(c=>{
+const o = c.from_club===myClubId ? c.to_club : c.from_club
+return c.match_id + "-" + o === key
+})
 
 if(existing){
 
 return prev.map(c=>{
 
-if(c.match_id!==newMsg.match_id) return c
+const o = c.from_club===myClubId ? c.to_club : c.from_club
+const convKey = c.match_id + "-" + o
+
+if(convKey!==key) return c
 
 const unread =
 newMsg.to_club===myClubId
@@ -238,19 +255,17 @@ return [{...newMsg,unread_count:1},...prev]
 )
 .subscribe()
 
-return()=>{
-supabase.removeChannel(channel)
-}
+return()=> supabase.removeChannel(channel)
 
-},[matchId,myClubId])
+},[matchId,clubId,myClubId])
 
-/* AUTOSCROLL */
+/* ---------------- AUTOSCROLL ---------------- */
 
 useEffect(()=>{
 bottomRef.current?.scrollIntoView({behavior:"smooth"})
 },[messages])
 
-/* SEND MESSAGE */
+/* ---------------- SEND ---------------- */
 
 async function sendMessage(){
 
@@ -259,7 +274,7 @@ if(!newMessage.trim() || !clubId || !matchId || !myClubId) return
 const messageText=newMessage
 setNewMessage("")
 
-const {data,error}=await supabase
+const {data}=await supabase
 .from("messages")
 .insert({
 match_id:matchId,
@@ -270,31 +285,17 @@ is_read:false
 })
 .select()
 
-if(!error && data){
-
+if(data){
 setMessages(prev=>[...prev,data[0]])
-
-setConversations(prev =>
-prev.map(conv =>
-conv.match_id===matchId
-? {...conv,message:messageText}
-: conv
-)
-)
+}
 
 }
 
-if(textareaRef.current) textareaRef.current.style.height="auto"
-
-}
-
-/* LOADING */
+/* ---------------- UI ---------------- */
 
 if(loading){
 return <div className="p-10 text-center font-bold">Connecting...</div>
 }
-
-/* UI */
 
 return(
 
@@ -331,7 +332,7 @@ conv.from_club===myClubId
 : conv.from_club
 
 const unread = conv.unread_count && conv.unread_count>0
-const active = matchId===conv.match_id
+const active = matchId===conv.match_id && clubId===otherId
 
 return(
 
@@ -347,21 +348,19 @@ active
 
 <div className="flex justify-between items-center">
 
-<p className={`text-sm ${unread?"font-bold text-slate-900":"text-slate-500"}`}>
+<p className={`text-sm ${unread?"font-bold":"text-slate-500"}`}>
 {otherClub}
 </p>
 
-{conv.unread_count && conv.unread_count > 0 ? (
+{conv.unread_count && conv.unread_count>0 && (
 <span className="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full">
 {conv.unread_count}
 </span>
-) : null}
+)}
 
 </div>
 
-<p className={`text-xs mt-1 truncate ${
-unread ? "font-bold text-slate-700" : "text-slate-400"
-}`}>
+<p className="text-xs mt-1 truncate text-slate-400">
 {conv.message}
 </p>
 
@@ -377,17 +376,15 @@ unread ? "font-bold text-slate-700" : "text-slate-400"
 
 {/* CHAT */}
 
-<div className="flex-1 flex flex-col bg-slate-50 w-full">
+<div className="flex-1 flex flex-col bg-slate-50">
 
 {matchId ? (
 
 <>
-<div className="p-4 bg-white border-b flex items-center gap-3 font-bold text-slate-800">
 
-<button
-className="md:hidden text-lg"
-onClick={()=>router.push("/messages")}
->
+<div className="p-4 bg-white border-b flex items-center gap-3 font-bold">
+
+<button className="md:hidden" onClick={()=>router.push("/messages")}>
 ←
 </button>
 
@@ -395,66 +392,43 @@ onClick={()=>router.push("/messages")}
 
 </div>
 
+<div className="flex-1 overflow-y-auto p-4 space-y-4 pb-32">
 
-<div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 pb-32">
+{messages.map(msg=>(
 
-{messages.map(msg=>{
-const isLast = msg.id === messages[messages.length - 1]?.id
-return(
-<div key={msg.id} className={`flex flex-col ${msg.from_club===myClubId?"items-end":"items-start"}`}>
+<div key={msg.id} className={`flex ${msg.from_club===myClubId?"justify-end":"justify-start"}`}>
 
 <div className={`px-4 py-2 rounded-2xl text-sm max-w-[70%] ${
 msg.from_club===myClubId
 ? "bg-emerald-600 text-white"
-: "bg-white border border-slate-200 text-slate-800"
+: "bg-white border"
 }`}>
 {msg.message}
 </div>
 
-<span className="text-[10px] text-slate-400 mt-1">
-{formatTime(msg.created_at)}
-</span>
-
-{msg.from_club === myClubId && isLast && msg.is_read && (
-<span className="text-[10px] text-emerald-500 mt-1">
-Seen
-</span>
-)}
-
 </div>
-)
-})}
+
+))}
 
 <div ref={bottomRef}></div>
 
 </div>
 
-<div className="p-4 bg-white border-t border-slate-200 pb-24 md:pb-4">
+<div className="p-4 bg-white border-t pb-24">
 
-<div className="flex items-end gap-3 max-w-4xl mx-auto">
+<div className="flex gap-3">
 
 <textarea
-ref={textareaRef}
 value={newMessage}
-onChange={(e)=>{
-setNewMessage(e.target.value)
-e.target.style.height="auto"
-e.target.style.height=e.target.scrollHeight+"px"
-}}
-onKeyDown={(e)=>{
-if(e.key==="Enter" && !e.shiftKey){
-e.preventDefault()
-sendMessage()
-}
-}}
-rows={1}
-placeholder="Type message..."
-className="flex-1 border border-slate-300 rounded-xl p-3 resize-none outline-none focus:ring-1 focus:ring-emerald-500 max-h-32 text-sm"
+onChange={(e)=>setNewMessage(e.target.value)}
+className="flex-1 border rounded-xl p-2"
+placeholder="Type..."
 />
 
 <button
 onClick={sendMessage}
-className="bg-emerald-600 text-white px-6 rounded-xl font-bold h-[48px] hover:bg-emerald-700">
+className="bg-emerald-600 text-white px-4 rounded-xl"
+>
 Send
 </button>
 
@@ -466,8 +440,8 @@ Send
 
 ) : (
 
-<div className="flex flex-1 items-center justify-center text-slate-400 italic">
-Select a conversation to start coordinating
+<div className="flex flex-1 items-center justify-center text-slate-400">
+Select a conversation
 </div>
 
 )}
