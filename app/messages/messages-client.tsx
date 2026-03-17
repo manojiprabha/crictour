@@ -111,10 +111,13 @@ export default function MessagesClient() {
 
     // mark read
     await supabase
-      .from("messages")
-      .update({ is_read: true })
-      .eq("match_id", matchId)
-      .eq("to_club", currentClubId)
+    .from("messages")
+    .update({ is_read: true })
+    .eq("match_id", matchId)
+    .eq("to_club", currentClubId)
+    .or(
+    `and(from_club.eq.${otherClubId},to_club.eq.${currentClubId})`
+)
 
     await loadConversations(currentClubId)
   }
@@ -203,11 +206,15 @@ export default function MessagesClient() {
                 return [...prev, newMsg]
               })
 
-              if (newMsg.to_club === myClubId) {
+              if(
+                newMsg.to_club === myClubId &&
+                newMsg.from_club === clubId &&
+                newMsg.match_id === matchId
+                ){
                 supabase
-                  .from("messages")
-                  .update({ is_read: true })
-                  .eq("id", newMsg.id)
+                .from("messages")
+                .update({ is_read: true })
+                .eq("id", newMsg.id)
               }
             }
           }
@@ -365,7 +372,7 @@ export default function MessagesClient() {
 
           <div className="flex-1 flex flex-col">
 
-            {matchId ? (
+            {matchId && clubId ? (
 
               <>
                 <div className="p-4 border-b font-bold flex items-center gap-3">
