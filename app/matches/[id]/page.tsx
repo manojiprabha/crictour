@@ -21,8 +21,29 @@ export default function MatchDetailPage() {
 
   const [match, setMatch] = useState<any>(null)
   const [interests, setInterests] = useState<Club[]>([])
+  const [myClubId, setMyClubId] = useState<string | null>(null)
 
   useEffect(() => {
+
+    async function init() {
+
+      const { data:userData } = await supabase.auth.getUser()
+
+      if(userData?.user){
+
+        const { data:club } = await supabase
+        .from("clubs")
+        .select("id")
+        .eq("created_by", userData.user.id)
+        .single()
+
+        if(club){
+          setMyClubId(club.id)
+        }
+
+      }
+
+    }
 
     async function loadMatch() {
 
@@ -65,6 +86,7 @@ export default function MatchDetailPage() {
     }
 
     if (matchId) {
+      init()
       loadMatch()
       loadInterests()
     }
@@ -73,22 +95,14 @@ export default function MatchDetailPage() {
 
 
   function openMessage(clubId: string) {
-
     router.push(`/messages?club=${clubId}&match=${matchId}`)
-
   }
-
 
   if (!match) {
-
-    return (
-      <div className="p-10">
-        Loading...
-      </div>
-    )
-
+    return <div className="p-10">Loading...</div>
   }
 
+  const isHost = match.club_id === myClubId
 
   return (
 
@@ -100,19 +114,23 @@ export default function MatchDetailPage() {
 
         <Sidebar />
 
-        <div className="flex-1 p-10">
+        <div className="flex-1 p-6 md:p-10">
 
           <h1 className="text-3xl font-bold mb-6">
             Match Details
           </h1>
 
-
           {/* Match Info */}
 
-          <div className="bg-white border rounded-xl p-6 mb-10">
+          <div className="bg-white border rounded-xl p-6 mb-6">
 
             <h2 className="text-xl font-bold mb-2">
               {match.club_name}
+              {isHost && (
+                <span className="ml-2 text-xs bg-slate-100 px-2 py-1 rounded">
+                  You
+                </span>
+              )}
             </h2>
 
             <p className="text-slate-500 mb-2">
@@ -127,64 +145,74 @@ export default function MatchDetailPage() {
               {match.description}
             </p>
 
+            {/* 👉 Non-host sees this */}
+            {!isHost && (
+              <button
+                onClick={() => openMessage(match.club_id)}
+                className="mt-4 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700"
+              >
+                Message Host
+              </button>
+            )}
+
           </div>
 
 
-          {/* Interested Clubs */}
+          {/* 👉 Only host sees interested clubs */}
 
-          <h2 className="text-xl font-bold mb-4">
-            Interested Clubs
-          </h2>
+          {isHost && (
+            <>
+              <h2 className="text-xl font-bold mb-4">
+                Interested Clubs ({interests.length})
+              </h2>
 
+              {interests.length === 0 && (
+                <p className="text-slate-500">
+                  No clubs have shown interest yet.
+                </p>
+              )}
 
-          {interests.length === 0 && (
+              <div className="space-y-4">
 
-            <p className="text-slate-500">
-              No clubs have shown interest yet.
-            </p>
+                {interests.map((club) => {
 
+                  if (!club || club.id === myClubId) return null
+
+                  return (
+
+                    <div
+                      key={club.id}
+                      className="bg-white border rounded-lg p-4 flex justify-between items-center"
+                    >
+
+                      <div>
+
+                        <p className="font-semibold">
+                          {club.club_name}
+                        </p>
+
+                        <p className="text-sm text-slate-500">
+                          {club.city}
+                        </p>
+
+                      </div>
+
+                      <button
+                        onClick={() => openMessage(club.id)}
+                        className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700"
+                      >
+                        Message
+                      </button>
+
+                    </div>
+
+                  )
+
+                })}
+
+              </div>
+            </>
           )}
-
-
-          <div className="space-y-4">
-
-            {interests.map((club) => {
-
-              if (!club) return null
-
-              return (
-
-                <div
-                  key={club.id}
-                  className="bg-white border rounded-lg p-4 flex justify-between items-center"
-                >
-
-                  <div>
-
-                    <p className="font-semibold">
-                      {club.club_name}
-                    </p>
-
-                    <p className="text-sm text-slate-500">
-                      {club.city}
-                    </p>
-
-                  </div>
-
-                  <button
-                    onClick={() => openMessage(club.id)}
-                    className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700"
-                  >
-                    Message
-                  </button>
-
-                </div>
-
-              )
-
-            })}
-
-          </div>
 
         </div>
 
