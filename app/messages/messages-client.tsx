@@ -144,7 +144,7 @@ fromClub:clubs!messages_from_club_fkey (club_name),
 toClub:clubs!messages_to_club_fkey (club_name)
 `)
 .or(`from_club.eq.${clubId},to_club.eq.${clubId}`)
-.order("created_at",{ascending:false})
+.order("created_at",{ascending:false}) // latest first
 
 if(!data) return
 
@@ -157,17 +157,23 @@ msg.from_club===clubId ? msg.to_club : msg.from_club
 
 const key = msg.match_id + "-" + otherId
 
+// ✅ ONLY SET FIRST TIME (because sorted DESC → latest comes first)
 if(!map[key]){
-map[key]={...msg,unread_count:0}
+map[key]={...msg, unread_count:0}
 }
 
+// count unread
 if(msg.to_club===clubId && !msg.is_read){
 map[key].unread_count++
 }
 
 })
 
-setConversations(Object.values(map))
+setConversations(
+Object.values(map).sort(
+(a,b)=> new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+)
+)
 
 }
 
