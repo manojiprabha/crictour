@@ -35,6 +35,7 @@ export default function MessagesPage() {
   const [myClubId, setMyClubId] = useState<string>("")
   const [messages, setMessages] = useState<Message[]>([])
   const [conversations, setConversations] = useState<Conversation[]>([])
+  const [clubMap, setClubMap] = useState<Record<string,string>>({})
   const [newMessage, setNewMessage] = useState("")
 
   /* ---------------- INIT ---------------- */
@@ -59,7 +60,32 @@ export default function MessagesPage() {
 
   }, [])
 
-  /* ---------------- FETCH ALL MESSAGES ---------------- */
+  /* ---------------- LOAD CLUB NAMES ---------------- */
+
+  useEffect(() => {
+
+    async function loadClubs() {
+
+      const { data } = await supabase
+        .from("clubs")
+        .select("id, club_name")
+
+      if (!data) return
+
+      const map: Record<string,string> = {}
+
+      data.forEach(c => {
+        map[c.id] = c.club_name
+      })
+
+      setClubMap(map)
+    }
+
+    loadClubs()
+
+  }, [])
+
+  /* ---------------- FETCH MESSAGES ---------------- */
 
   useEffect(() => {
 
@@ -91,11 +117,10 @@ export default function MessagesPage() {
 
     allMessages.forEach((msg) => {
 
-      const clubs = [msg.from_club, msg.to_club].sort()
-      const key = `${msg.match_id}-${clubs.join("-")}`
-
       const otherClubId =
         msg.from_club === myClubId ? msg.to_club : msg.from_club
+
+      const key = otherClubId
 
       if (!map[key]) {
         map[key] = {
@@ -107,13 +132,12 @@ export default function MessagesPage() {
         }
       }
 
-      // latest message
       if (new Date(msg.created_at) > new Date(map[key].created_at)) {
         map[key].last_message = msg.message
         map[key].created_at = msg.created_at
+        map[key].match_id = msg.match_id
       }
 
-      // unread
       if (msg.to_club === myClubId && !msg.is_read) {
         map[key].unread_count += 1
       }
@@ -182,7 +206,6 @@ export default function MessagesPage() {
 
     setNewMessage("")
 
-    // reload
     const { data } = await supabase
       .from("messages")
       .select("*")
@@ -208,7 +231,7 @@ export default function MessagesPage() {
 
         <Sidebar/>
 
-        {/* LEFT */}
+        {/* LEFT SIDEBAR */}
 
         <div className="w-80 border-r bg-white">
 
@@ -228,7 +251,7 @@ export default function MessagesPage() {
 
               <div>
                 <p className="text-sm font-semibold">
-                  {conv.club_id}
+                  {clubMap[conv.club_id] || "Club"}
                 </p>
 
                 <p className="text-xs text-slate-500 truncate">
@@ -248,7 +271,7 @@ export default function MessagesPage() {
 
         </div>
 
-        {/* RIGHT */}
+        {/* CHAT AREA */}
 
         <div className="flex-1 flex flex-col">
 
