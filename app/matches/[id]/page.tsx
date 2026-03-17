@@ -12,51 +12,52 @@ type Club = {
   city: string
 }
 
+type Match = {
+  id: string
+  club_id: string
+  club_name: string
+  city: string
+  match_date: string
+  format: string
+}
+
 export default function MatchDetailPage() {
 
   const params = useParams()
   const router = useRouter()
-
   const matchId = params?.id as string
 
-  const [match, setMatch] = useState<any>(null)
+  const [match, setMatch] = useState<Match | null>(null)
   const [interests, setInterests] = useState<Club[]>([])
   const [myClubId, setMyClubId] = useState<string | null>(null)
+
+  /* ---------------- INIT ---------------- */
 
   useEffect(() => {
 
     async function init() {
 
       const { data:userData } = await supabase.auth.getUser()
+      if (!userData?.user) return
 
-      if(userData?.user){
-
-        const { data:club } = await supabase
+      const { data:club } = await supabase
         .from("clubs")
         .select("id")
         .eq("created_by", userData.user.id)
         .single()
 
-        if(club){
-          setMyClubId(club.id)
-        }
-
-      }
-
+      if (club) setMyClubId(club.id)
     }
 
     async function loadMatch() {
 
       const { data } = await supabase
         .from("matches")
-        .select("*")
+        .select("*") // make sure club_id exists here
         .eq("id", matchId)
         .single()
 
-      if (data) {
-        setMatch(data)
-      }
-
+      if (data) setMatch(data)
     }
 
     async function loadInterests() {
@@ -74,15 +75,9 @@ export default function MatchDetailPage() {
         .eq("match_id", matchId)
 
       if (data) {
-
-        const clubs = data
-          .map((item: any) => item.clubs)
-          .filter((c: any) => c)
-
+        const clubs = data.map((i:any)=>i.clubs).filter(Boolean)
         setInterests(clubs)
-
       }
-
     }
 
     if (matchId) {
@@ -93,26 +88,31 @@ export default function MatchDetailPage() {
 
   }, [matchId])
 
+  /* ---------------- SAFE GUARD ---------------- */
 
-  function openMessage(clubId: string) {
-    router.push(`/messages?club=${clubId}&match=${matchId}`)
-  }
-
-  if (!match) {
+  if (!match || !myClubId) {
     return <div className="p-10">Loading...</div>
   }
 
+  /* ---------------- LOGIC ---------------- */
+
   const isHost = match.club_id === myClubId
+
+  function openMessage(clubId:string){
+    router.push(`/messages?club=${clubId}&match=${matchId}`)
+  }
+
+  /* ---------------- UI ---------------- */
 
   return (
 
     <div className="min-h-screen bg-slate-50">
 
-      <Navbar />
+      <Navbar/>
 
       <div className="flex">
 
-        <Sidebar />
+        <Sidebar/>
 
         <div className="flex-1 p-6 md:p-10">
 
@@ -120,20 +120,22 @@ export default function MatchDetailPage() {
             Match Details
           </h1>
 
-          {/* Match Info */}
+          {/* MATCH CARD */}
 
           <div className="bg-white border rounded-xl p-6 mb-6">
 
             <h2 className="text-xl font-bold mb-2">
               {match.club_name}
+
               {isHost && (
                 <span className="ml-2 text-xs bg-slate-100 px-2 py-1 rounded">
                   You
                 </span>
               )}
+
             </h2>
 
-            <p className="text-slate-500 mb-2">
+            <p className="text-slate-500">
               {match.city}
             </p>
 
@@ -141,15 +143,12 @@ export default function MatchDetailPage() {
               {match.match_date} • {match.format}
             </p>
 
-            <p className="text-slate-600">
-              {match.description}
-            </p>
+            {/* NON HOST */}
 
-            {/* 👉 Non-host sees this */}
             {!isHost && (
               <button
-                onClick={() => openMessage(match.club_id)}
-                className="mt-4 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700"
+                onClick={()=>openMessage(match.club_id)}
+                className="mt-4 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold"
               >
                 Message Host
               </button>
@@ -157,10 +156,10 @@ export default function MatchDetailPage() {
 
           </div>
 
-
-          {/* 👉 Only host sees interested clubs */}
+          {/* HOST VIEW */}
 
           {isHost && (
+
             <>
               <h2 className="text-xl font-bold mb-4">
                 Interested Clubs ({interests.length})
@@ -174,7 +173,7 @@ export default function MatchDetailPage() {
 
               <div className="space-y-4">
 
-                {interests.map((club) => {
+                {interests.map(club=>{
 
                   if (!club || club.id === myClubId) return null
 
@@ -186,20 +185,13 @@ export default function MatchDetailPage() {
                     >
 
                       <div>
-
-                        <p className="font-semibold">
-                          {club.club_name}
-                        </p>
-
-                        <p className="text-sm text-slate-500">
-                          {club.city}
-                        </p>
-
+                        <p className="font-semibold">{club.club_name}</p>
+                        <p className="text-sm text-slate-500">{club.city}</p>
                       </div>
 
                       <button
-                        onClick={() => openMessage(club.id)}
-                        className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700"
+                        onClick={()=>openMessage(club.id)}
+                        className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold"
                       >
                         Message
                       </button>
@@ -219,7 +211,6 @@ export default function MatchDetailPage() {
       </div>
 
     </div>
-
   )
 
 }

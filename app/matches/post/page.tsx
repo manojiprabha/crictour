@@ -11,6 +11,7 @@ export default function PostMatch(){
 const router = useRouter()
 
 const [clubName,setClubName] = useState("")
+const [clubId,setClubId] = useState<string | null>(null) // ✅ NEW
 const [city,setCity] = useState("")
 const [matchType,setMatchType] = useState("")
 const [format,setFormat] = useState("")
@@ -18,19 +19,20 @@ const [date,setDate] = useState("")
 const [description,setDescription] = useState("")
 const [email,setEmail] = useState("")
 
+/* ---------------- LOAD CLUB ---------------- */
+
 useEffect(()=>{
 
 async function loadClub(){
 
 const { data:userData } = await supabase.auth.getUser()
-
 const user = userData?.user
 
 if(!user) return
 
 const { data:club } = await supabase
 .from("clubs")
-.select("*")
+.select("id, club_name, city") // ✅ include id
 .eq("created_by",user.id)
 .single()
 
@@ -38,6 +40,7 @@ if(club){
 
 setClubName(club.club_name)
 setCity(club.city)
+setClubId(club.id) // ✅ IMPORTANT
 
 }
 
@@ -49,6 +52,8 @@ loadClub()
 
 },[])
 
+/* ---------------- SUBMIT ---------------- */
+
 async function submitMatch(){
 
 if(!date){
@@ -56,10 +61,16 @@ alert("Please select a match date")
 return
 }
 
+if(!clubId){
+alert("Club not loaded properly")
+return
+}
+
 const { error } = await supabase
 .from("matches")
 .insert([
 {
+club_id: clubId,              // 🔥 FIX (CRITICAL)
 club_name: clubName,
 city: city,
 match_type: matchType,
@@ -81,6 +92,8 @@ alert("Match posted successfully!")
 router.push("/matches")
 
 }
+
+/* ---------------- UI ---------------- */
 
 return(
 
