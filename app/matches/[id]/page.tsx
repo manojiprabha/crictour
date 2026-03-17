@@ -19,6 +19,7 @@ type Match = {
   city: string
   match_date: string
   format: string
+  status?: string
 }
 
 export default function MatchDetailPage() {
@@ -53,7 +54,7 @@ export default function MatchDetailPage() {
 
       const { data } = await supabase
         .from("matches")
-        .select("*") // make sure club_id exists here
+        .select("*")
         .eq("id", matchId)
         .single()
 
@@ -87,6 +88,21 @@ export default function MatchDetailPage() {
     }
 
   }, [matchId])
+
+  /* ---------------- UPDATE STATUS ---------------- */
+
+  async function updateStatus(status: string) {
+
+    if (!match) return
+
+    await supabase
+      .from("matches")
+      .update({ status })
+      .eq("id", match.id)
+
+    // refresh UI
+    router.refresh()
+  }
 
   /* ---------------- SAFE GUARD ---------------- */
 
@@ -133,6 +149,13 @@ export default function MatchDetailPage() {
                 </span>
               )}
 
+              {/* ✅ STATUS BADGE */}
+              {match.status && (
+                <span className="ml-2 text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded">
+                  {match.status}
+                </span>
+              )}
+
             </h2>
 
             <p className="text-slate-500">
@@ -142,6 +165,30 @@ export default function MatchDetailPage() {
             <p className="text-slate-500 mb-2">
               {match.match_date} • {match.format}
             </p>
+
+            {/* ✅ HOST ACTIONS */}
+
+            {isHost && match.status === "open" && (
+
+              <div className="flex gap-3 mt-4">
+
+                <button
+                  onClick={() => updateStatus("arranged")}
+                  className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm"
+                >
+                  Mark Arranged
+                </button>
+
+                <button
+                  onClick={() => updateStatus("closed")}
+                  className="bg-slate-200 px-4 py-2 rounded-lg text-sm"
+                >
+                  Close Post
+                </button>
+
+              </div>
+
+            )}
 
             {/* NON HOST */}
 
@@ -212,5 +259,4 @@ export default function MatchDetailPage() {
 
     </div>
   )
-
 }

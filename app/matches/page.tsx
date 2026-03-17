@@ -30,7 +30,8 @@ const today = new Date().toISOString().split("T")[0]
 const { data } = await supabase
   .from("matches")
   .select("*")
-  .gte("match_date", today)   // ✅ only upcoming matches
+  .eq("status", "open")                // ✅ only open
+  .gte("match_date", today)            // ✅ not expired
   .order("match_date", { ascending: true })
 if(data){
 setMatches(data)
