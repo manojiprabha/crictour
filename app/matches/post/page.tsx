@@ -5,6 +5,9 @@ import { supabase } from "@/lib/supabase"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
 import { useRouter } from "next/navigation"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
 
 export default function PostMatch(){
 
@@ -26,7 +29,10 @@ const { data:userData } = await supabase.auth.getUser()
 
 const user = userData?.user
 
-if(!user) return
+if(!user) {
+  router.push("/")
+  return
+}
 
 const { data:club } = await supabase
 .from("clubs")
@@ -100,58 +106,58 @@ Post Match
 
 <div className="space-y-4">
 
-<input
+<Input
 value={clubName}
 readOnly
-className="w-full border p-2 rounded bg-gray-100"
+className="w-full h-12 rounded-lg bg-gray-100"
 />
 
-<input
+<Input
 value={city}
 readOnly
-className="w-full border p-2 rounded bg-gray-100"
+className="w-full h-12 rounded-lg bg-gray-100"
 />
 
-<input
+<Input
 placeholder="Match Type (Friendly / Tour)"
-className="w-full border p-2 rounded"
+className="w-full h-12 rounded-lg"
 value={matchType}
 onChange={(e)=>setMatchType(e.target.value)}
 />
 
-<input
+<Input
 placeholder="Format (T20 / 40 overs)"
-className="w-full border p-2 rounded"
+className="w-full h-12 rounded-lg"
 value={format}
 onChange={(e)=>setFormat(e.target.value)}
 />
 
-<input
+<Input
 type="date"
-className="w-full border p-2 rounded"
+className="w-full h-12 rounded-lg"
 value={date}
 onChange={(e)=>setDate(e.target.value)}
 />
 
-<textarea
+<Textarea
 placeholder="Match Details"
-className="w-full border p-2 rounded"
+className="w-full rounded-lg min-h-[100px]"
 value={description}
 onChange={(e)=>setDescription(e.target.value)}
 />
 
-<input
+<Input
 value={email}
 readOnly
-className="w-full border p-2 rounded bg-gray-100"
+className="w-full h-12 rounded-lg bg-gray-100"
 />
 
-<button
+<Button
 onClick={submitMatch}
-className="bg-emerald-600 text-white px-4 py-2 rounded"
+className="bg-emerald-600 text-white w-full h-12 rounded-lg hover:bg-emerald-700"
 >
 Submit Match
-</button>
+</Button>
 
 </div>
 

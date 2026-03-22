@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase"
 import { useParams, useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
+import { Button } from "@/components/ui/button"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 
 type Club = {
   id: string
@@ -109,25 +111,25 @@ export default function MatchDetailPage() {
 
           {/* Match Info */}
 
-          <div className="bg-white border rounded-xl p-6 mb-10">
+          <Card className="mb-10 shadow-sm border-slate-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xl font-bold">
+                {match.club_name}
+              </CardTitle>
+              <CardDescription className="text-slate-500">
+                {match.city}
+              </CardDescription>
+            </CardHeader>
 
-            <h2 className="text-xl font-bold mb-2">
-              {match.club_name}
-            </h2>
-
-            <p className="text-slate-500 mb-2">
-              {match.city}
-            </p>
-
-            <p className="text-slate-500 mb-2">
-              {match.match_date} • {match.format}
-            </p>
-
-            <p className="text-slate-600">
-              {match.description}
-            </p>
-
-          </div>
+            <CardContent>
+              <p className="font-medium text-slate-700 mb-2">
+                {match.match_date} • {match.format}
+              </p>
+              <p className="text-slate-600 leading-relaxed">
+                {match.description}
+              </p>
+            </CardContent>
+          </Card>
 
 
           {/* Interested Clubs */}
@@ -154,14 +156,14 @@ export default function MatchDetailPage() {
 
               return (
 
-                <div
+                <Card
                   key={club.id}
-                  className="bg-white border rounded-lg p-4 flex justify-between items-center"
+                  className="p-4 flex flex-row justify-between items-center shadow-sm"
                 >
 
                   <div>
 
-                    <p className="font-semibold">
+                    <p className="font-semibold text-slate-900">
                       {club.club_name}
                     </p>
 
@@ -171,14 +173,14 @@ export default function MatchDetailPage() {
 
                   </div>
 
-                  <button
+                  <Button
                     onClick={() => openMessage(club.id)}
-                    className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700"
+                    className="bg-emerald-600 text-white font-semibold hover:bg-emerald-700"
                   >
                     Message
-                  </button>
+                  </Button>
 
-                </div>
+                </Card>
 
               )
 

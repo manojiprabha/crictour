@@ -1,10 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
 
 export default function PostTour(){
 
@@ -15,6 +18,16 @@ const [city,setCity] = useState("")
 const [dates,setDates] = useState("")
 const [description,setDescription] = useState("")
 const [email,setEmail] = useState("")
+
+useEffect(() => {
+  async function checkAuth() {
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData?.user) {
+      router.push("/")
+    }
+  }
+  checkAuth()
+}, [router])
 
 async function submitTour(){
 
@@ -48,47 +61,47 @@ Host a Touring Team
 
 <div className="space-y-4">
 
-<input
+<Input
 placeholder="Club Name"
-className="w-full border p-2 rounded"
+className="w-full h-12 rounded-lg"
 value={clubName}
 onChange={(e)=>setClubName(e.target.value)}
 />
 
-<input
+<Input
 placeholder="City"
-className="w-full border p-2 rounded"
+className="w-full h-12 rounded-lg"
 value={city}
 onChange={(e)=>setCity(e.target.value)}
 />
 
-<input
+<Input
 placeholder="Tour Dates (e.g. July 10–15)"
-className="w-full border p-2 rounded"
+className="w-full h-12 rounded-lg"
 value={dates}
 onChange={(e)=>setDates(e.target.value)}
 />
 
-<textarea
+<Textarea
 placeholder="Tour details"
-className="w-full border p-2 rounded"
+className="w-full rounded-lg min-h-[100px]"
 value={description}
 onChange={(e)=>setDescription(e.target.value)}
 />
 
-<input
+<Input
 placeholder="Contact Email"
-className="w-full border p-2 rounded"
+className="w-full h-12 rounded-lg"
 value={email}
 onChange={(e)=>setEmail(e.target.value)}
 />
 
-<button
+<Button
 onClick={submitTour}
-className="bg-emerald-600 text-white px-4 py-2 rounded"
+className="bg-emerald-600 text-white w-full h-12 rounded-lg hover:bg-emerald-700"
 >
 Submit Tour Request
-</button>
+</Button>
 
 </div>
 

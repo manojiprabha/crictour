@@ -1,9 +1,12 @@
 "use client"
 
 import Navbar from "@/components/Navbar"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 
 export default function RegisterClub(){
 
@@ -16,6 +19,16 @@ const [role,setRole] = useState("")
 const [phone,setPhone] = useState("")
 const [playCricket,setPlayCricket] = useState("")
 const [loading,setLoading] = useState(false)
+
+useEffect(() => {
+  async function checkAuth() {
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData?.user) {
+      router.push("/")
+    }
+  }
+  checkAuth()
+}, [router])
 
 async function createClub(){
 
@@ -85,62 +98,61 @@ Register Your Club
 
 <div className="space-y-4">
 
-<input
+<Input
 placeholder="Club Name"
 value={clubName}
 onChange={(e)=>setClubName(e.target.value)}
-className="w-full border rounded-lg p-3"
+className="w-full h-12 rounded-lg"
 />
 
-<input
+<Input
 placeholder="City"
 value={city}
 onChange={(e)=>setCity(e.target.value)}
-className="w-full border rounded-lg p-3"
+className="w-full h-12 rounded-lg"
 />
 
-<input
+<Input
 placeholder="Club Address"
 value={address}
 onChange={(e)=>setAddress(e.target.value)}
-className="w-full border rounded-lg p-3"
+className="w-full h-12 rounded-lg"
 />
 
-<select
-value={role}
-onChange={(e)=>setRole(e.target.value)}
-className="w-full border rounded-lg p-3"
->
-<option value="">Your Role</option>
-<option>Captain</option>
-<option>Vice Captain</option>
-<option>Secretary</option>
-<option>Manager</option>
-<option>Player</option>
-</select>
+<Select value={role} onValueChange={setRole}>
+  <SelectTrigger className="w-full h-12 rounded-lg text-slate-500">
+    <SelectValue placeholder="Your Role" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="Captain">Captain</SelectItem>
+    <SelectItem value="Vice Captain">Vice Captain</SelectItem>
+    <SelectItem value="Secretary">Secretary</SelectItem>
+    <SelectItem value="Manager">Manager</SelectItem>
+    <SelectItem value="Player">Player</SelectItem>
+  </SelectContent>
+</Select>
 
-<input
+<Input
 placeholder="Contact Phone"
 value={phone}
 onChange={(e)=>setPhone(e.target.value)}
-className="w-full border rounded-lg p-3"
+className="w-full h-12 rounded-lg"
 />
 
-<input
+<Input
 placeholder="Play Cricket URL"
 value={playCricket}
 onChange={(e)=>setPlayCricket(e.target.value)}
-className="w-full border rounded-lg p-3"
+className="w-full h-12 rounded-lg"
 />
 
-<button
+<Button
 onClick={createClub}
 disabled={loading}
-className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold 
-hover:bg-emerald-700 active:scale-95 transition cursor-pointer disabled:opacity-50"
+className="w-full h-12 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition"
 >
 {loading ? "Creating Club..." : "Create Club"}
-</button>
+</Button>
 
 </div>
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
 
 export default function Navbar(){
 
@@ -13,7 +14,6 @@ const [email,setEmail] = useState<string | null>(null)
 useEffect(()=>{
 
 async function loadUser(){
-
 const { data } = await supabase.auth.getUser()
 
 if(data?.user){
@@ -25,7 +25,6 @@ setEmail(data.user.email || null)
 setEmail(null)
 
 }
-
 }
 
 loadUser()
@@ -75,12 +74,13 @@ onClick={handleLogoClick}
 {email}
 </span>
 
-<button
+<Button
 onClick={signOut}
-className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm"
+variant="destructive"
+className="px-3 py-1 rounded text-sm h-8"
 >
 Sign Out
-</button>
+</Button>
 </>
 )}
 

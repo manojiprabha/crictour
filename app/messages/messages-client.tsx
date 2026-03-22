@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
 import { useSearchParams, useRouter } from "next/navigation"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
 
 type Message = {
 id:string
@@ -384,12 +386,14 @@ unread ? "font-bold text-slate-700" : "text-slate-400"
 <>
 <div className="p-4 bg-white border-b flex items-center gap-3 font-bold text-slate-800">
 
-<button
-className="md:hidden text-lg"
+<Button
+variant="ghost"
+size="icon"
+className="md:hidden"
 onClick={()=>router.push("/messages")}
 >
 ←
-</button>
+</Button>
 
 {chatClubName}
 
@@ -433,7 +437,7 @@ Seen
 
 <div className="flex items-end gap-3 max-w-4xl mx-auto">
 
-<textarea
+<Textarea
 ref={textareaRef}
 value={newMessage}
 onChange={(e)=>{
@@ -449,14 +453,15 @@ sendMessage()
 }}
 rows={1}
 placeholder="Type message..."
-className="flex-1 border border-slate-300 rounded-xl p-3 resize-none outline-none focus:ring-1 focus:ring-emerald-500 max-h-32 text-sm"
+className="flex-1 min-h-[48px] max-h-32 resize-none"
 />
 
-<button
+<Button
 onClick={sendMessage}
-className="bg-emerald-600 text-white px-6 rounded-xl font-bold h-[48px] hover:bg-emerald-700">
+className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 px-6"
+>
 Send
-</button>
+</Button>
 
 </div>
 

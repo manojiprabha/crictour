@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
 import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 
 type Match = {
     id: string
@@ -99,46 +101,49 @@ export default function MatchesPage() {
 
                         {matches.map((match) => (
 
-                            <div
+                            <Card
                                 key={match.id}
-                                className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition"
+                                className="shadow-sm hover:shadow-md transition flex flex-col pt-2"
                             >
 
-                                <h3 className="text-lg font-bold mb-2">
-                                    {match.club_name}
-                                </h3>
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-lg font-bold">
+                                        {match.club_name}
+                                    </CardTitle>
+                                    <CardDescription className="text-sm text-slate-500">
+                                        {match.city}
+                                    </CardDescription>
+                                </CardHeader>
 
-                                <p className="text-sm text-slate-500 mb-1">
-                                    {match.city}
-                                </p>
+                                <CardContent className="flex-1">
+                                    <p className="text-sm text-slate-500 mb-2 font-medium">
+                                        {match.match_date} • {match.format}
+                                    </p>
+                                    <p className="text-sm text-slate-600 mb-4 line-clamp-3">
+                                        {match.description}
+                                    </p>
+                                </CardContent>
 
-                                <p className="text-sm text-slate-500 mb-2">
-                                    {match.match_date} • {match.format}
-                                </p>
+                                <CardFooter className="flex gap-2">
 
-                                <p className="text-sm text-slate-600 mb-4">
-                                    {match.description}
-                                </p>
-
-                                <div className="flex gap-2">
-
-                                    <button
+                                    <Button
+                                        variant="outline"
                                         onClick={() => router.push(`/matches/${match.id}`)}
-                                        className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-50"
+                                        className="text-sm font-semibold hover:bg-slate-50 border-slate-300"
                                     >
                                         View
-                                    </button>
+                                    </Button>
 
-                                    <button
+                                    <Button
                                         onClick={() => expressInterest(match.id)}
-                                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700"
+                                        className="bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700"
                                     >
                                         I'm Interested
-                                    </button>
+                                    </Button>
 
-                                </div>
+                                </CardFooter>
 
-                            </div>
+                            </Card>
 
                         ))}
 

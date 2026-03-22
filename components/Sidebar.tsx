@@ -3,6 +3,7 @@
 import { useRouter, usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
+import { Button } from "@/components/ui/button"
 
 export default function Sidebar() {
 
@@ -16,7 +17,7 @@ export default function Sidebar() {
     let clubId:string | null = null
 
     async function init(){
-
+      /*
       const { data:userData } = await supabase.auth.getUser()
 
       if(!userData?.user) return
@@ -39,7 +40,7 @@ export default function Sidebar() {
       .eq("is_read",false)
 
       setUnreadMessages(count || 0)
-
+      */
     }
 
     init()
@@ -105,28 +106,29 @@ export default function Sidebar() {
 
     return(
 
-      <button
+      <Button
+        variant="ghost"
         onClick={()=>router.push(path)}
-        className={`flex items-center justify-between w-full px-4 py-2.5 rounded-xl text-sm transition
+        className={`flex items-center justify-between w-full px-4 py-6 rounded-xl text-sm transition hover:bg-slate-50
         ${
           active
-          ? "bg-emerald-50 text-emerald-700 font-bold shadow-sm"
-          : "text-slate-600 hover:bg-slate-50"
+          ? "bg-emerald-50 text-emerald-700 font-bold shadow-sm hover:bg-emerald-50"
+          : "text-slate-600"
         }`}
       >
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 font-medium">
           <span className="text-lg">{icon}</span>
           <span>{label}</span>
         </div>
 
         {badge && badge > 0 && (
-          <span className="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full animate-pulse">
+          <span className="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full animate-pulse h-5 flex items-center justify-center min-w-[20px]">
             {badge}
           </span>
         )}
 
-      </button>
+      </Button>
 
     )
 

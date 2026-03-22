@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 
 type Match = {
 id:string
@@ -79,14 +81,14 @@ My Matches
 
 {matches.map((match)=>(
 
-<div
+<Card
 key={match.id}
-className="bg-white border rounded-lg p-4 flex justify-between"
+className="p-4 flex justify-between items-center shadow-sm"
 >
 
 <div>
 
-<p className="font-semibold">
+<p className="font-semibold text-slate-900">
 {match.match_date}
 </p>
 
@@ -96,14 +98,15 @@ className="bg-white border rounded-lg p-4 flex justify-between"
 
 </div>
 
-<button
+<Button
+variant="destructive"
 onClick={()=>deleteMatch(match.id)}
-className="text-red-500"
+className="font-semibold"
 >
 Delete
-</button>
+</Button>
 
-</div>
+</Card>
 
 ))}
 

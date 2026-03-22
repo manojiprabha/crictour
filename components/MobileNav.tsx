@@ -1,6 +1,7 @@
 "use client"
 
 import { useRouter, usePathname } from "next/navigation"
+import { Button } from "@/components/ui/button"
 
 export default function MobileNav(){
 
@@ -13,17 +14,18 @@ const active = pathname === path
 
 return(
 
-<button
+<Button
+variant="ghost"
 onClick={()=>router.push(path)}
-className={`flex flex-col items-center text-xs ${
-active ? "text-emerald-600" : "text-slate-500"
+className={`flex flex-col items-center justify-center p-0 h-auto gap-1 text-xs hover:bg-transparent ${
+active ? "text-emerald-600" : "text-slate-500 hover:text-emerald-600"
 }`}
 >
 
-<span className="text-xl">{icon}</span>
+<span className="text-xl leading-none">{icon}</span>
 <span>{label}</span>
 
-</button>
+</Button>
 
 )
 

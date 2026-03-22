@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 
 export default function Profile(){
 
@@ -21,7 +23,10 @@ const { data:userData } = await supabase.auth.getUser()
 
 const user = userData?.user
 
-if(!user) return
+if(!user) {
+  window.location.href = "/"
+  return
+}
 
 const { data } = await supabase
 .from("clubs")
@@ -79,37 +84,33 @@ Edit Club Profile
 
 <div className="space-y-4">
 
-<input
+<Input
 value={clubName}
 onChange={(e)=>setClubName(e.target.value)}
-className="w-full border p-2 rounded"
 />
 
-<input
+<Input
 value={city}
 onChange={(e)=>setCity(e.target.value)}
-className="w-full border p-2 rounded"
 />
 
-<input
+<Input
 value={role}
 onChange={(e)=>setRole(e.target.value)}
-className="w-full border p-2 rounded"
 />
 
-<input
+<Input
 value={playCricket}
 onChange={(e)=>setPlayCricket(e.target.value)}
-className="w-full border p-2 rounded"
 placeholder="Play Cricket URL"
 />
 
-<button
+<Button
 onClick={updateClub}
-className="bg-emerald-600 text-white px-4 py-2 rounded"
+className="bg-emerald-600 hover:bg-emerald-700 text-white"
 >
 Save Changes
-</button>
+</Button>
 
 </div>
 
