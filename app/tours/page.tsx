@@ -2,35 +2,36 @@
 
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar"
 
-export default function Tours(){
+export default function Tours() {
 
-return(
+    return (
 
-<div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-slate-50">
 
-<Navbar/>
+            <Navbar />
 
-<div className="flex">
+            <SidebarProvider className="flex flex-1 min-h-0">
 
-<Sidebar/>
+                <Sidebar />
 
-<div className="flex-1 p-10">
+                <div className="flex-1 p-10">
 
-<h1 className="text-3xl font-bold">
-Tours
-</h1>
+                    <h1 className="text-3xl font-bold">
+                        Tours
+                    </h1>
 
-<p className="text-slate-500 mt-4">
-Tour marketplace coming soon.
-</p>
+                    <p className="text-slate-500 mt-4">
+                        Tour marketplace coming soon.
+                    </p>
 
-</div>
+                </div>
 
-</div>
+            </SidebarProvider>
 
-</div>
+        </div>
 
-)
+    )
 
 }

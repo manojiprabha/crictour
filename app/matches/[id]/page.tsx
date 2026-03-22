@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
+import { getMatchById, getMatchInterests } from "@/services/matchService"
 import { useParams, useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 
@@ -27,43 +28,17 @@ export default function MatchDetailPage() {
   useEffect(() => {
 
     async function loadMatch() {
-
-      const { data } = await supabase
-        .from("matches")
-        .select("*")
-        .eq("id", matchId)
-        .single()
-
+      const { match: data } = await getMatchById(matchId)
       if (data) {
         setMatch(data)
       }
-
     }
 
     async function loadInterests() {
-
-      const { data } = await supabase
-        .from("match_interests")
-        .select(`
-          club_id,
-          clubs (
-            id,
-            club_name,
-            city
-          )
-        `)
-        .eq("match_id", matchId)
-
-      if (data) {
-
-        const clubs = data
-          .map((item: any) => item.clubs)
-          .filter((c: any) => c)
-
+      const { interests: clubs } = await getMatchInterests(matchId)
+      if (clubs) {
         setInterests(clubs)
-
       }
-
     }
 
     if (matchId) {
@@ -98,7 +73,7 @@ export default function MatchDetailPage() {
 
       <Navbar />
 
-      <div className="flex">
+      <SidebarProvider className="flex flex-1 min-h-0">
 
         <Sidebar />
 
@@ -190,7 +165,7 @@ export default function MatchDetailPage() {
 
         </div>
 
-      </div>
+      </SidebarProvider>
 
     </div>
 

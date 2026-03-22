@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar"
 
 type Club = {
   id: string
@@ -46,7 +47,7 @@ export default function ClubsPage() {
 
       <Navbar />
 
-      <div className="flex">
+      <SidebarProvider className="flex flex-1 min-h-0">
 
         <Sidebar />
 
@@ -111,7 +112,7 @@ export default function ClubsPage() {
 
         </div>
 
-      </div>
+      </SidebarProvider>
 
     </div>
 

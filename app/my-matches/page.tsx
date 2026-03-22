@@ -1,123 +1,117 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
+import { getCurrentUser } from "@/services/authService"
+import { getClubByUserId } from "@/services/clubService"
+import { getMatchesByClubName, deleteMatch as deleteMatchService } from "@/services/matchService"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
 type Match = {
-id:string
-club_name:string
-match_date:string
-format:string
-match_type:string
+  id: string
+  club_name: string
+  match_date: string
+  format: string
+  match_type: string
 }
 
-export default function MyMatches(){
+export default function MyMatches() {
 
-const [matches,setMatches] = useState<Match[]>([])
+  const [matches, setMatches] = useState<Match[]>([])
 
-useEffect(()=>{
+  useEffect(() => {
 
-async function loadMatches(){
+    async function loadMatches() {
 
-const { data:userData } = await supabase.auth.getUser()
+      const { user } = await getCurrentUser()
 
-const user = userData?.user
+      if (!user) return
 
-if(!user) return
+      const { club } = await getClubByUserId(user.id)
 
-const { data:club } = await supabase
-.from("clubs")
-.select("*")
-.eq("created_by",user.id)
-.single()
+      if (!club) return
 
-if(!club) return
+      const { matches: data } = await getMatchesByClubName(club.club_name)
 
-const { data } = await supabase
-.from("matches")
-.select("*")
-.eq("club_name",club.club_name)
+      if (data) setMatches(data)
 
-if(data) setMatches(data)
+    }
 
-}
+    loadMatches()
 
-loadMatches()
+  }, [])
 
-},[])
+  async function deleteMatch(id: string) {
 
-async function deleteMatch(id:string){
+    try {
+      await deleteMatchService(id)
+      setMatches(matches.filter(m => m.id !== id))
+    } catch (error) {
+      alert("Failed to delete match")
+    }
 
-await supabase
-.from("matches")
-.delete()
-.eq("id",id)
+  }
 
-setMatches(matches.filter(m=>m.id!==id))
+  return (
 
-}
+    <div className="min-h-screen bg-slate-50">
 
-return(
+      <Navbar />
 
-<div className="min-h-screen bg-slate-50">
+      <SidebarProvider className="flex flex-1 min-h-0">
 
-<Navbar/>
+        <Sidebar />
 
-<div className="flex">
+        <div className="flex-1 p-10">
 
-<Sidebar/>
+          <h1 className="text-3xl font-bold mb-8">
+            My Matches
+          </h1>
 
-<div className="flex-1 p-10">
+          <div className="space-y-4">
 
-<h1 className="text-3xl font-bold mb-8">
-My Matches
-</h1>
+            {matches.map((match) => (
 
-<div className="space-y-4">
+              <Card
+                key={match.id}
+                className="p-4 flex justify-between items-center shadow-sm"
+              >
 
-{matches.map((match)=>(
+                <div>
 
-<Card
-key={match.id}
-className="p-4 flex justify-between items-center shadow-sm"
->
+                  <p className="font-semibold text-slate-900">
+                    {match.match_date}
+                  </p>
 
-<div>
+                  <p className="text-sm text-slate-500">
+                    {match.format} • {match.match_type}
+                  </p>
 
-<p className="font-semibold text-slate-900">
-{match.match_date}
-</p>
+                </div>
 
-<p className="text-sm text-slate-500">
-{match.format} • {match.match_type}
-</p>
+                <Button
+                  variant="destructive"
+                  onClick={() => deleteMatch(match.id)}
+                  className="font-semibold"
+                >
+                  Delete
+                </Button>
 
-</div>
+              </Card>
 
-<Button
-variant="destructive"
-onClick={()=>deleteMatch(match.id)}
-className="font-semibold"
->
-Delete
-</Button>
+            ))}
 
-</Card>
+          </div>
 
-))}
+        </div>
 
-</div>
+      </SidebarProvider>
 
-</div>
+    </div>
 
-</div>
-
-</div>
-
-)
+  )
 
 }

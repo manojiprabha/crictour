@@ -2,488 +2,461 @@
 
 import { useEffect, useState, useRef } from "react"
 import { supabase } from "@/lib/supabase"
+import { getMessagesByMatchId, markMessagesAsRead, getConversations, sendMessageService } from "@/services/messageService"
+import { getCurrentUser } from "@/services/authService"
+import { getClubByUserId } from "@/services/clubService"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 
 type Message = {
-id:string
-message:string
-from_club:string
-to_club:string
-match_id:string
-created_at:string
-is_read:boolean
-fromClub?:{club_name:string}
-toClub?:{club_name:string}
+  id: string
+  message: string
+  from_club: string
+  to_club: string
+  match_id: string
+  created_at: string
+  is_read: boolean
+  fromClub?: { club_name: string }
+  toClub?: { club_name: string }
 }
 
-type Conversation = Message & { unread_count?:number }
+type Conversation = Message & { unread_count?: number }
 
-export default function MessagesClient(){
+export default function MessagesClient() {
 
-const params = useSearchParams()
-const router = useRouter()
+  const params = useSearchParams()
+  const router = useRouter()
 
-const clubId = params.get("club")
-const matchId = params.get("match")
+  const clubId = params.get("club")
+  const matchId = params.get("match")
 
-const [messages,setMessages] = useState<Message[]>([])
-const [conversations,setConversations] = useState<Conversation[]>([])
-const [totalUnread,setTotalUnread] = useState(0)
-const [chatClubName,setChatClubName] = useState("")
-const [newMessage,setNewMessage] = useState("")
-const [myClubId,setMyClubId] = useState<string | null>(null)
-const [loading,setLoading] = useState(true)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [totalUnread, setTotalUnread] = useState(0)
+  const [chatClubName, setChatClubName] = useState("")
+  const [newMessage, setNewMessage] = useState("")
+  const [myClubId, setMyClubId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
-const textareaRef = useRef<HTMLTextAreaElement | null>(null)
-const bottomRef = useRef<HTMLDivElement | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const bottomRef = useRef<HTMLDivElement | null>(null)
 
-const formatTime=(dateString:string)=>{
-const date=new Date(dateString)
-return date.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})
-}
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  }
 
-/* INIT */
+  /* INIT */
 
-useEffect(()=>{
+  useEffect(() => {
 
-async function init(){
+    async function init() {
 
-const {data:userData}=await supabase.auth.getUser()
+      const { user } = await getCurrentUser()
 
-if(!userData?.user){
-setLoading(false)
-return
-}
+      if (!user) {
+        setLoading(false)
+        return
+      }
 
-const {data:club}=await supabase
-.from("clubs")
-.select("id")
-.eq("created_by",userData.user.id)
-.single()
+      const { club } = await getClubByUserId(user.id)
 
-if(club){
+      if (club) {
 
-setMyClubId(club.id)
+        setMyClubId(club.id)
 
-await loadConversations(club.id)
+        await loadConversations(club.id)
 
-if(matchId) await loadMessages(club.id)
+        if (matchId) await loadMessages(club.id)
 
-}
+      }
 
-setLoading(false)
+      setLoading(false)
 
-}
+    }
 
-init()
+    init()
 
-},[matchId])
+  }, [matchId])
 
-/* LOAD CHAT */
+  /* LOAD CHAT */
 
-async function loadMessages(currentClubId:string){
+  async function loadMessages(currentClubId: string) {
 
-if(!matchId) return
+    if (!matchId) return
 
-const {data}=await supabase
-.from("messages")
-.select(`
-*,
-fromClub:clubs!messages_from_club_fkey (club_name),
-toClub:clubs!messages_to_club_fkey (club_name)
-`)
-.eq("match_id",matchId)
-.order("created_at",{ascending:true})
+    const { messages: data } = await getMessagesByMatchId(matchId)
 
-if(data){
+    if (data) {
 
-setMessages(data)
+      setMessages(data)
 
-const first=data[0]
+      const first = data[0]
 
-if(first){
-setChatClubName(
-first.from_club===currentClubId
-? first.toClub?.club_name || ""
-: first.fromClub?.club_name || ""
-)
-}
+      if (first) {
+        setChatClubName(
+          first.from_club === currentClubId
+            ? first.toClub?.club_name || ""
+            : first.fromClub?.club_name || ""
+        )
+      }
 
-}
+    }
 
-await supabase
-.from("messages")
-.update({is_read:true})
-.eq("match_id",matchId)
-.eq("to_club",currentClubId)
+    await markMessagesAsRead(matchId, currentClubId)
 
-setConversations(prev =>
-prev.map(conv =>
-conv.match_id===matchId
-? {...conv,unread_count:0}
-: conv
-)
-)
+    setConversations(prev =>
+      prev.map(conv =>
+        conv.match_id === matchId
+          ? { ...conv, unread_count: 0 }
+          : conv
+      )
+    )
 
-await loadConversations(currentClubId)
+    await loadConversations(currentClubId)
 
-}
+  }
 
-/* LOAD INBOX */
+  /* LOAD INBOX */
 
-async function loadConversations(clubId:string){
+  async function loadConversations(clubId: string) {
 
-const {data}=await supabase
-.from("messages")
-.select(`
-*,
-fromClub:clubs!messages_from_club_fkey (club_name),
-toClub:clubs!messages_to_club_fkey (club_name)
-`)
-.or(`from_club.eq.${clubId},to_club.eq.${clubId}`)
-.order("created_at",{ascending:false})
+    const { conversations: data } = await getConversations(clubId)
 
-if(!data) return
+    if (!data) return
 
-const map:any={}
+    const map: any = {}
 
-data.forEach(msg=>{
+    data.forEach(msg => {
 
-if(!map[msg.match_id]){
-map[msg.match_id]={...msg,unread_count:0}
-}
+      if (!map[msg.match_id]) {
+        map[msg.match_id] = { ...msg, unread_count: 0 }
+      }
 
-if(msg.to_club===clubId && !msg.is_read){
-map[msg.match_id].unread_count++
-}
+      if (msg.to_club === clubId && !msg.is_read) {
+        map[msg.match_id].unread_count++
+      }
 
-})
+    })
 
-setConversations(Object.values(map))
+    setConversations(Object.values(map))
 
-const total = Object.values(map).reduce<number>(
-(sum,conv:any)=> sum + (conv.unread_count || 0),
-0
-)
+    const total = Object.values(map).reduce<number>(
+      (sum, conv: any) => sum + (conv.unread_count || 0),
+      0
+    )
 
-setTotalUnread(total)
+    setTotalUnread(total)
 
-}
+  }
 
-/* REALTIME */
+  /* REALTIME */
 
-useEffect(()=>{
+  useEffect(() => {
 
-if(!myClubId) return
+    if (!myClubId) return
 
-const channel=supabase
-.channel("chat-realtime")
-.on(
-"postgres_changes",
-{event:"INSERT",schema:"public",table:"messages"},
-(payload)=>{
+    const channel = supabase
+      .channel("chat-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        (payload) => {
 
-const newMsg=payload.new as Message
+          const newMsg = payload.new as Message
 
-if(newMsg.match_id===matchId){
+          if (newMsg.match_id === matchId) {
 
-setMessages(prev=>{
-if(prev.some(m=>m.id===newMsg.id)) return prev
-return [...prev,newMsg]
-})
+            setMessages(prev => {
+              if (prev.some(m => m.id === newMsg.id)) return prev
+              return [...prev, newMsg]
+            })
 
-if(newMsg.to_club===myClubId){
+            if (newMsg.to_club === myClubId) {
 
-supabase
-.from("messages")
-.update({is_read:true})
-.eq("id",newMsg.id)
+              supabase
+                .from("messages")
+                .update({ is_read: true })
+                .eq("id", newMsg.id)
 
-}
+            }
 
-}
+          }
 
-setConversations(prev=>{
+          setConversations(prev => {
 
-const existing=prev.find(c=>c.match_id===newMsg.match_id)
+            const existing = prev.find(c => c.match_id === newMsg.match_id)
 
-if(existing){
+            if (existing) {
 
-return prev.map(c=>{
+              return prev.map(c => {
 
-if(c.match_id!==newMsg.match_id) return c
+                if (c.match_id !== newMsg.match_id) return c
 
-const unread =
-newMsg.to_club===myClubId
-? (c.unread_count || 0)+1
-: c.unread_count
+                const unread =
+                  newMsg.to_club === myClubId
+                    ? (c.unread_count || 0) + 1
+                    : c.unread_count
 
-return {
-...c,
-message:newMsg.message,
-unread_count:unread
-}
+                return {
+                  ...c,
+                  message: newMsg.message,
+                  unread_count: unread
+                }
 
-})
+              })
 
-}
+            }
 
-return [{...newMsg,unread_count:1},...prev]
+            return [{ ...newMsg, unread_count: 1 }, ...prev]
 
-})
+          })
 
-}
-)
-.subscribe()
+        }
+      )
+      .subscribe()
 
-return()=>{
-supabase.removeChannel(channel)
-}
+    return () => {
+      supabase.removeChannel(channel)
+    }
 
-},[matchId,myClubId])
+  }, [matchId, myClubId])
 
-/* AUTOSCROLL */
+  /* AUTOSCROLL */
 
-useEffect(()=>{
-bottomRef.current?.scrollIntoView({behavior:"smooth"})
-},[messages])
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
 
-/* SEND MESSAGE */
+  /* SEND MESSAGE */
 
-async function sendMessage(){
+  async function sendMessage() {
 
-if(!newMessage.trim() || !clubId || !matchId || !myClubId) return
+    if (!newMessage.trim() || !clubId || !matchId || !myClubId) return
 
-const messageText=newMessage
-setNewMessage("")
+    const messageText = newMessage
+    setNewMessage("")
 
-const {data,error}=await supabase
-.from("messages")
-.insert({
-match_id:matchId,
-from_club:myClubId,
-to_club:clubId,
-message:messageText,
-is_read:false
-})
-.select()
+    const { data, error } = await sendMessageService({
+      matchId: matchId,
+      fromClubId: myClubId,
+      toClubId: clubId,
+      message: messageText
+    })
 
-if(!error && data){
+    if (!error && data) {
 
-setMessages(prev=>[...prev,data[0]])
+      setMessages(prev => [...prev, data[0]])
 
-setConversations(prev =>
-prev.map(conv =>
-conv.match_id===matchId
-? {...conv,message:messageText}
-: conv
-)
-)
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.match_id === matchId
+            ? { ...conv, message: messageText }
+            : conv
+        )
+      )
 
-}
+    }
 
-if(textareaRef.current) textareaRef.current.style.height="auto"
+    if (textareaRef.current) textareaRef.current.style.height = "auto"
 
-}
+  }
 
-/* LOADING */
+  /* LOADING */
 
-if(loading){
-return <div className="p-10 text-center font-bold">Connecting...</div>
-}
+  if (loading) {
+    return <div className="p-10 text-center font-bold">Connecting...</div>
+  }
 
-/* UI */
+  /* UI */
 
-return(
+  return (
 
-<div className="flex flex-col h-[100dvh] bg-white overflow-hidden">
+    <div className="flex flex-col h-[100dvh] bg-white overflow-hidden">
 
-<Navbar/>
+      <Navbar />
 
-<div className="flex flex-1 overflow-hidden">
+      <SidebarProvider className="flex flex-1 overflow-hidden min-h-0">
 
-<Sidebar/>
+        <Sidebar />
 
-<div className="flex flex-col md:flex-row flex-1 overflow-hidden border-t border-slate-200">
+        <div className="flex flex-col md:flex-row flex-1 overflow-hidden border-t border-slate-200">
 
-{/* INBOX */}
+          {/* INBOX */}
 
-<div className={`w-full md:w-80 border-r bg-white flex flex-col ${matchId ? "hidden md:flex" : ""}`}>
+          <div className={`w-full md:w-80 border-r bg-white flex flex-col ${matchId ? "hidden md:flex" : ""}`}>
 
-<div className="p-4 border-b font-bold text-slate-800">
-Inbox
-</div>
+            <div className="p-4 border-b font-bold text-slate-800">
+              Inbox
+            </div>
 
-<div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto">
 
-{conversations.map(conv=>{
+              {conversations.map(conv => {
 
-const otherClub =
-conv.from_club===myClubId
-? conv.toClub?.club_name
-: conv.fromClub?.club_name
+                const otherClub =
+                  conv.from_club === myClubId
+                    ? conv.toClub?.club_name
+                    : conv.fromClub?.club_name
 
-const otherId =
-conv.from_club===myClubId
-? conv.to_club
-: conv.from_club
+                const otherId =
+                  conv.from_club === myClubId
+                    ? conv.to_club
+                    : conv.from_club
 
-const unread = conv.unread_count && conv.unread_count>0
-const active = matchId===conv.match_id
+                const unread = conv.unread_count && conv.unread_count > 0
+                const active = matchId === conv.match_id
 
-return(
+                return (
 
-<div
-key={conv.id}
-onClick={()=>router.push(`/messages?club=${otherId}&match=${conv.match_id}`)}
-className={`p-4 border-b cursor-pointer transition ${
-active
-? "bg-emerald-50 border-r-4 border-r-emerald-600"
-: "hover:bg-gray-50"
-}`}
->
+                  <div
+                    key={conv.id}
+                    onClick={() => router.push(`/messages?club=${otherId}&match=${conv.match_id}`)}
+                    className={`p-4 border-b cursor-pointer transition ${active
+                        ? "bg-emerald-50 border-r-4 border-r-emerald-600"
+                        : "hover:bg-gray-50"
+                      }`}
+                  >
 
-<div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center">
 
-<p className={`text-sm ${unread?"font-bold text-slate-900":"text-slate-500"}`}>
-{otherClub}
-</p>
+                      <p className={`text-sm ${unread ? "font-bold text-slate-900" : "text-slate-500"}`}>
+                        {otherClub}
+                      </p>
 
-{conv.unread_count && conv.unread_count > 0 ? (
-<span className="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full">
-{conv.unread_count}
-</span>
-) : null}
+                      {conv.unread_count && conv.unread_count > 0 ? (
+                        <span className="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full">
+                          {conv.unread_count}
+                        </span>
+                      ) : null}
 
-</div>
+                    </div>
 
-<p className={`text-xs mt-1 truncate ${
-unread ? "font-bold text-slate-700" : "text-slate-400"
-}`}>
-{conv.message}
-</p>
+                    <p className={`text-xs mt-1 truncate ${unread ? "font-bold text-slate-700" : "text-slate-400"
+                      }`}>
+                      {conv.message}
+                    </p>
 
-</div>
+                  </div>
 
-)
+                )
 
-})}
+              })}
 
-</div>
+            </div>
 
-</div>
+          </div>
 
-{/* CHAT */}
+          {/* CHAT */}
 
-<div className="flex-1 flex flex-col bg-slate-50 w-full">
+          <div className="flex-1 flex flex-col bg-slate-50 w-full">
 
-{matchId ? (
+            {matchId ? (
 
-<>
-<div className="p-4 bg-white border-b flex items-center gap-3 font-bold text-slate-800">
+              <>
+                <div className="p-4 bg-white border-b flex items-center gap-3 font-bold text-slate-800">
 
-<Button
-variant="ghost"
-size="icon"
-className="md:hidden"
-onClick={()=>router.push("/messages")}
->
-←
-</Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden"
+                    onClick={() => router.push("/messages")}
+                  >
+                    ←
+                  </Button>
 
-{chatClubName}
+                  {chatClubName}
 
-</div>
+                </div>
 
 
-<div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 pb-32">
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 pb-32">
 
-{messages.map(msg=>{
-const isLast = msg.id === messages[messages.length - 1]?.id
-return(
-<div key={msg.id} className={`flex flex-col ${msg.from_club===myClubId?"items-end":"items-start"}`}>
+                  {messages.map(msg => {
+                    const isLast = msg.id === messages[messages.length - 1]?.id
+                    return (
+                      <div key={msg.id} className={`flex flex-col ${msg.from_club === myClubId ? "items-end" : "items-start"}`}>
 
-<div className={`px-4 py-2 rounded-2xl text-sm max-w-[70%] ${
-msg.from_club===myClubId
-? "bg-emerald-600 text-white"
-: "bg-white border border-slate-200 text-slate-800"
-}`}>
-{msg.message}
-</div>
+                        <div className={`px-4 py-2 rounded-2xl text-sm max-w-[70%] ${msg.from_club === myClubId
+                            ? "bg-emerald-600 text-white"
+                            : "bg-white border border-slate-200 text-slate-800"
+                          }`}>
+                          {msg.message}
+                        </div>
 
-<span className="text-[10px] text-slate-400 mt-1">
-{formatTime(msg.created_at)}
-</span>
+                        <span className="text-[10px] text-slate-400 mt-1">
+                          {formatTime(msg.created_at)}
+                        </span>
 
-{msg.from_club === myClubId && isLast && msg.is_read && (
-<span className="text-[10px] text-emerald-500 mt-1">
-Seen
-</span>
-)}
+                        {msg.from_club === myClubId && isLast && msg.is_read && (
+                          <span className="text-[10px] text-emerald-500 mt-1">
+                            Seen
+                          </span>
+                        )}
 
-</div>
-)
-})}
+                      </div>
+                    )
+                  })}
 
-<div ref={bottomRef}></div>
+                  <div ref={bottomRef}></div>
 
-</div>
+                </div>
 
-<div className="p-4 bg-white border-t border-slate-200 pb-24 md:pb-4">
+                <div className="p-4 bg-white border-t border-slate-200 pb-24 md:pb-4">
 
-<div className="flex items-end gap-3 max-w-4xl mx-auto">
+                  <div className="flex items-end gap-3 max-w-4xl mx-auto">
 
-<Textarea
-ref={textareaRef}
-value={newMessage}
-onChange={(e)=>{
-setNewMessage(e.target.value)
-e.target.style.height="auto"
-e.target.style.height=e.target.scrollHeight+"px"
-}}
-onKeyDown={(e)=>{
-if(e.key==="Enter" && !e.shiftKey){
-e.preventDefault()
-sendMessage()
-}
-}}
-rows={1}
-placeholder="Type message..."
-className="flex-1 min-h-[48px] max-h-32 resize-none"
-/>
+                    <Textarea
+                      ref={textareaRef}
+                      value={newMessage}
+                      onChange={(e) => {
+                        setNewMessage(e.target.value)
+                        e.target.style.height = "auto"
+                        e.target.style.height = e.target.scrollHeight + "px"
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault()
+                          sendMessage()
+                        }
+                      }}
+                      rows={1}
+                      placeholder="Type message..."
+                      className="flex-1 min-h-[48px] max-h-32 resize-none"
+                    />
 
-<Button
-onClick={sendMessage}
-className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 px-6"
->
-Send
-</Button>
+                    <Button
+                      onClick={sendMessage}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 px-6"
+                    >
+                      Send
+                    </Button>
 
-</div>
+                  </div>
 
-</div>
+                </div>
 
-</>
+              </>
 
-) : (
+            ) : (
 
-<div className="flex flex-1 items-center justify-center text-slate-400 italic">
-Select a conversation to start coordinating
-</div>
+              <div className="flex flex-1 items-center justify-center text-slate-400 italic">
+                Select a conversation to start coordinating
+              </div>
 
-)}
+            )}
 
-</div>
+          </div>
 
-</div>
+        </div>
 
-</div>
+      </SidebarProvider>
 
-</div>
+    </div>
 
-)
+  )
 }

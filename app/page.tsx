@@ -1,22 +1,32 @@
 "use client"
 
 import Navbar from "@/components/Navbar"
-import { supabase } from "@/lib/supabase"
+import { getSession, signInWithGoogle, signUpWithEmail } from "@/services/authService"
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Calendar01Icon, SearchList01Icon, Airplane01Icon, ArrowRight01Icon } from "hugeicons-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardTitle, CardContent } from "@/components/ui/card"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { loginSchema, LoginFormValues } from "@/lib/schemas"
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form"
 export default function Home() {
   const [showEmail, setShowEmail] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: ""
+    }
+  })
 
   useEffect(() => {
     async function checkSession() {
-      const { data } = await supabase.auth.getSession()
-      if (data.session) {
+      const { session } = await getSession()
+      if (session) {
         window.location.href = "/dashboard"
       }
     }
@@ -25,14 +35,11 @@ export default function Home() {
 
   async function googleLogin() {
     const redirectUrl = typeof window !== "undefined" ? `${window.location.origin}/dashboard` : "/dashboard"
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: redirectUrl }
-    })
+    await signInWithGoogle(redirectUrl)
   }
 
-  async function emailSignup() {
-    const { error } = await supabase.auth.signUp({ email, password })
+  async function onSubmit(data: LoginFormValues) {
+    const { error } = await signUpWithEmail(data.email, data.password)
     if (error) alert(error.message)
     else alert("Check your email to confirm your account")
   }
@@ -68,8 +75,8 @@ export default function Home() {
           </div>
 
           <div className="relative z-20 w-full max-w-7xl mx-auto px-6 grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            
-            <motion.div 
+
+            <motion.div
               className="lg:col-span-7 text-center lg:text-left pt-10 lg:pt-0"
               variants={containerVariants}
               initial="hidden"
@@ -82,14 +89,14 @@ export default function Home() {
                 </span>
                 The UK Cricket Network
               </motion.div>
-              
+
               <motion.h1 variants={itemVariants} className="text-5xl lg:text-7xl font-extrabold tracking-tight mb-6 leading-[1.1]">
-                Find fixtures.<br/>
+                Find fixtures.<br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200">
                   Organise tours.
                 </span>
               </motion.h1>
-              
+
               <motion.p variants={itemVariants} className="text-lg lg:text-xl text-emerald-50/70 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-light">
                 The modern platform for cricket clubs to fill fixture gaps, discover new opponents, and arrange tours across the UK effortlessly.
               </motion.p>
@@ -114,7 +121,7 @@ export default function Home() {
               </motion.div>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               className="lg:col-span-5 w-full max-w-md mx-auto"
               initial={{ opacity: 0, scale: 0.95, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -122,7 +129,7 @@ export default function Home() {
             >
               <div className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl p-8 text-white relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
-                
+
                 <h2 className="text-2xl font-bold mb-2 relative z-10 text-center text-white">Get Started</h2>
                 <p className="text-emerald-100/70 text-sm text-center mb-8 relative z-10">Join hundreds of active clubs today.</p>
 
@@ -151,31 +158,55 @@ export default function Home() {
                       Register with Email
                     </Button>
                   ) : (
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
-                      className="flex flex-col gap-3"
+                      className="w-full"
                     >
-                      <Input
-                        type="email"
-                        placeholder="Club Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="h-11 bg-white/5 border-white/20 rounded-xl px-4 text-white placeholder:text-white/40 focus-visible:bg-white/10 focus-visible:ring-emerald-500/50 transition-all font-medium"
-                      />
-                      <Input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="h-11 bg-white/5 border-white/20 rounded-xl px-4 text-white placeholder:text-white/40 focus-visible:bg-white/10 focus-visible:ring-emerald-500/50 transition-all font-medium"
-                      />
-                      <Button
-                        onClick={emailSignup}
-                        className="w-full h-11 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-xl font-bold text-sm shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] transition-all hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)] hover:-translate-y-0.5 mt-2 border-0"
-                      >
-                        Create Account
-                      </Button>
+                      <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-3">
+                          <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="email"
+                                    placeholder="Club Email"
+                                    className="h-11 bg-white/5 border-white/20 rounded-xl px-4 text-white placeholder:text-white/40 focus-visible:bg-white/10 focus-visible:ring-emerald-500/50 transition-all font-medium"
+                                  />
+                                </FormControl>
+                                <FormMessage className="text-red-400" />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="password"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="password"
+                                    placeholder="Password"
+                                    className="h-11 bg-white/5 border-white/20 rounded-xl px-4 text-white placeholder:text-white/40 focus-visible:bg-white/10 focus-visible:ring-emerald-500/50 transition-all font-medium"
+                                  />
+                                </FormControl>
+                                <FormMessage className="text-red-400" />
+                              </FormItem>
+                            )}
+                          />
+                          <Button
+                            type="submit"
+                            className="w-full h-11 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-xl font-bold text-sm shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] transition-all hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)] hover:-translate-y-0.5 mt-2 border-0"
+                          >
+                            Create Account
+                          </Button>
+                        </form>
+                      </Form>
                     </motion.div>
                   )}
                 </div>
@@ -187,7 +218,7 @@ export default function Home() {
         {/* FEATURES SECTION */}
         <section className="py-24 bg-white relative">
           <div className="max-w-7xl mx-auto px-6">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
@@ -204,28 +235,28 @@ export default function Home() {
             </motion.div>
 
             <div className="grid md:grid-cols-3 gap-8">
-              <FeatureCard 
+              <FeatureCard
                 icon={<Calendar01Icon size={32} className="text-emerald-600" />}
-                title="Broadcast Fixtures" 
-                description="Post open dates instantly to our network. Let teams looking for a game come directly to you instead of chasing contacts." 
+                title="Broadcast Fixtures"
+                description="Post open dates instantly to our network. Let teams looking for a game come directly to you instead of chasing contacts."
                 delay={0.1}
               />
-              <FeatureCard 
+              <FeatureCard
                 icon={<SearchList01Icon size={32} className="text-emerald-600" />}
-                title="Find the Right Match" 
-                description="Filter available teams by region, date, and playing strength to ensure you get a competitive and enjoyable game." 
+                title="Find the Right Match"
+                description="Filter available teams by region, date, and playing strength to ensure you get a competitive and enjoyable game."
                 delay={0.2}
               />
-              <FeatureCard 
+              <FeatureCard
                 icon={<Airplane01Icon size={32} className="text-emerald-600" />}
-                title="Organise Tours" 
-                description="Connect with host clubs across the country. Arrange multi-game tours with confidence using direct messaging." 
+                title="Organise Tours"
+                description="Connect with host clubs across the country. Arrange multi-game tours with confidence using direct messaging."
                 delay={0.3}
               />
             </div>
           </div>
         </section>
-        
+
         {/* CTA SECTION */}
         <section className="py-24 bg-slate-50 relative overflow-hidden border-t border-slate-200/50">
           <div className="absolute top-0 right-0 -translate-y-12 translate-x-1/3 w-[800px] h-[800px] bg-emerald-100/50 rounded-full blur-[100px] opacity-60"></div>
@@ -240,7 +271,7 @@ export default function Home() {
               <p className="text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
                 Join the fastest growing network of cricket clubs in the UK. Setup takes less than two minutes.
               </p>
-              <Button 
+              <Button
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 className="inline-flex items-center gap-2 px-8 py-6 bg-[#091b15] hover:bg-[#12372a] text-white rounded-xl font-bold text-lg transition-all shadow-xl hover:-translate-y-1"
               >
@@ -271,7 +302,7 @@ export default function Home() {
 
 function FeatureCard({ icon, title, description, delay }: { icon: React.ReactNode, title: string, description: string, delay: number }) {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}

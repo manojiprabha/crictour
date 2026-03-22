@@ -1,9 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
+import { getCurrentUser } from "@/services/authService"
+import { getClubByUserId } from "@/services/clubService"
+import { getAllMatches, expressInterest as expressInterestService } from "@/services/matchService"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
@@ -27,10 +30,7 @@ export default function MatchesPage() {
 
         async function loadMatches() {
 
-            const { data } = await supabase
-                .from("matches")
-                .select("*")
-                .order("match_date", { ascending: true })
+            const { matches: data } = await getAllMatches()
 
             if (data) {
                 setMatches(data)
@@ -45,38 +45,26 @@ export default function MatchesPage() {
 
     async function expressInterest(matchId: string) {
 
-        const { data: userData } = await supabase.auth.getUser()
-        const user = userData?.user
+        const { user } = await getCurrentUser()
 
         if (!user) {
             alert("Login required")
             return
         }
 
-        const { data: club } = await supabase
-            .from("clubs")
-            .select("id")
-            .eq("created_by", user.id)
-            .single()
+        const { club } = await getClubByUserId(user.id)
 
         if (!club) {
             alert("Club not found")
             return
         }
 
-        const { error } = await supabase
-            .from("match_interests")
-            .insert({
-                match_id: matchId,
-                club_id: club.id
-            })
-
-        if (error) {
-            alert(error.message)
-            return
+        try {
+            await expressInterestService(matchId, club.id)
+            alert("Interest sent!")
+        } catch (error: any) {
+            alert(error.message || "Failed to send interest")
         }
-
-        alert("Interest sent!")
 
     }
 
@@ -87,7 +75,7 @@ export default function MatchesPage() {
 
             <Navbar />
 
-            <div className="flex">
+            <SidebarProvider className="flex flex-1 min-h-0">
 
                 <Sidebar />
 
@@ -151,7 +139,7 @@ export default function MatchesPage() {
 
                 </div>
 
-            </div>
+            </SidebarProvider>
 
         </div>
 

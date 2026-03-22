@@ -2,10 +2,13 @@
 
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import MobileNav from "@/components/MobileNav"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
+import { getCurrentUser } from "@/services/authService"
+import { getClubByUserId } from "@/services/clubService"
+import { getRecentMatches } from "@/services/matchService"
 import { Button } from "@/components/ui/button"
 import { Card, CardTitle, CardDescription } from "@/components/ui/card"
 
@@ -28,19 +31,14 @@ export default function Dashboard() {
 
     async function checkClub() {
 
-      const { data: userData } = await supabase.auth.getUser()
-      const user = userData?.user
+      const { user } = await getCurrentUser()
 
       if (!user) {
         window.location.href = "/"
         return
       }
 
-      const { data: club } = await supabase
-        .from("clubs")
-        .select("club_name")
-        .eq("created_by", user.id)
-        .single()
+      const { club } = await getClubByUserId(user.id)
 
       if (!club) {
         window.location.href = "/registerclub"
@@ -55,11 +53,7 @@ export default function Dashboard() {
 
     async function loadMatches() {
 
-      const { data } = await supabase
-        .from("matches")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(4)
+      const { matches: data } = await getRecentMatches(4)
 
       if (data) {
         setMatches(data)
@@ -117,7 +111,7 @@ export default function Dashboard() {
 
       <Navbar />
 
-      <div className="flex flex-1 flex-col md:flex-row">
+      <SidebarProvider className="flex flex-1 flex-col md:flex-row min-h-0">
 
         {/* Sidebar visible only on desktop */}
         <Sidebar />
@@ -228,7 +222,7 @@ export default function Dashboard() {
 
         </div>
 
-      </div>
+      </SidebarProvider>
 
 
     </div>

@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
-import { supabase } from "@/lib/supabase"
+import { getClubById } from "@/services/clubService"
+import { getMatchesByClubName } from "@/services/matchService"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar"
 
 type Club = {
   id: string
@@ -33,19 +35,11 @@ export default function ClubProfile() {
   useEffect(() => {
 
     async function loadClub() {
-
-      const { data } = await supabase
-        .from("clubs")
-        .select("*")
-        .eq("id", params.id)
-        .single()
-
+      const { club: data } = await getClubById(params.id as string)
       if (data) {
         setClub(data)
       }
-
       setLoading(false)
-
     }
 
     loadClub()
@@ -61,16 +55,10 @@ export default function ClubProfile() {
     const clubName = club.club_name
 
     async function loadMatches() {
-
-      const { data } = await supabase
-        .from("matches")
-        .select("*")
-        .eq("club_name", clubName)
-
+      const { matches: data } = await getMatchesByClubName(clubName)
       if (data) {
         setMatches(data)
       }
-
     }
 
     loadMatches()
@@ -100,7 +88,7 @@ export default function ClubProfile() {
 
       <Navbar />
 
-      <div className="flex">
+      <SidebarProvider className="flex flex-1 min-h-0">
 
         <Sidebar />
 
@@ -182,7 +170,7 @@ export default function ClubProfile() {
 
         </div>
 
-      </div>
+      </SidebarProvider>
 
     </div>
 
