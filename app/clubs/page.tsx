@@ -21,27 +21,34 @@ export default function ClubsPage() {
   const [clubs, setClubs] = useState<Club[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const [search, setSearch] = useState("")
+  const [city, setCity] = useState("")
 
-    async function loadClubs() {
+  async function loadClubs() {
+    setLoading(true)
 
-      const { data } = await supabase
-        .from("clubs")
-        .select("*")
-        .order("club_name")
+    let query = supabase.from("clubs").select("*").order("club_name")
 
-      if (data) setClubs(data)
-
-      setLoading(false)
-
+    if (search) {
+      query = query.ilike("club_name", `%${search}%`)
     }
 
-    loadClubs()
+    if (city) {
+      query = query.ilike("city", `%${city}%`)
+    }
 
+    const { data } = await query
+
+    if (data) setClubs(data)
+
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    loadClubs()
   }, [])
 
   return (
-
     <div className="min-h-screen bg-slate-50">
 
       <Navbar />
@@ -52,26 +59,47 @@ export default function ClubsPage() {
 
         <div className="flex-1 p-10">
 
-          <h1 className="text-3xl font-bold mb-8">
+          <h1 className="text-3xl font-bold mb-6">
             Clubs Directory
           </h1>
 
-          {loading && (
-            <p className="text-slate-500">
-              Loading clubs...
-            </p>
-          )}
+          {/* FILTER UI */}
+          <div className="flex gap-4 mb-8">
+
+            <input
+              type="text"
+              placeholder="Search club..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="border px-4 py-2 rounded w-60"
+            />
+
+            <input
+              type="text"
+              placeholder="City / County"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className="border px-4 py-2 rounded w-60"
+            />
+
+            <button
+              onClick={loadClubs}
+              className="bg-emerald-600 text-white px-5 py-2 rounded"
+            >
+              Search
+            </button>
+
+          </div>
+
+          {loading && <p className="text-slate-500">Loading clubs...</p>}
 
           {!loading && clubs.length === 0 && (
-            <p className="text-slate-500">
-              No clubs registered yet.
-            </p>
+            <p className="text-slate-500">No clubs found.</p>
           )}
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
 
             {clubs.map((club) => (
-
               <div
                 key={club.id}
                 onClick={() => router.push(`/clubs/${club.id}`)}
@@ -91,7 +119,6 @@ export default function ClubsPage() {
                 </p>
 
                 {club.play_cricket_url && (
-
                   <a
                     href={club.play_cricket_url}
                     target="_blank"
@@ -100,11 +127,9 @@ export default function ClubsPage() {
                   >
                     View Play-Cricket →
                   </a>
-
                 )}
 
               </div>
-
             ))}
 
           </div>
@@ -114,7 +139,5 @@ export default function ClubsPage() {
       </div>
 
     </div>
-
   )
-
 }

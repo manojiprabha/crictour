@@ -7,152 +7,201 @@ import Sidebar from "@/components/Sidebar"
 import { useRouter } from "next/navigation"
 
 type Match = {
- id:string
- club_name:string
- city:string
- match_type:string
- format:string
- match_date:string
- description:string
+  id: string
+  club_name: string
+  city: string
+  match_type: string
+  format: string
+  match_date: string
+  description: string
 }
 
-export default function MatchesPage(){
+export default function MatchesPage() {
 
-const router = useRouter()
-const [matches,setMatches] = useState<Match[]>([])
+  const router = useRouter()
 
-useEffect(()=>{
+  const [matches, setMatches] = useState<Match[]>([])
 
-async function loadMatches(){
+  const [matchType, setMatchType] = useState("")
+  const [city, setCity] = useState("")
+  const [month, setMonth] = useState("")
 
-const today = new Date().toISOString().split("T")[0]
+  async function loadMatches() {
 
-const { data } = await supabase
-  .from("matches")
-  .select("*")
-  .eq("status", "open")                // ✅ only open
-  .gte("match_date", today)            // ✅ not expired
-  .order("match_date", { ascending: true })
-if(data){
-setMatches(data)
-}
+    const today = new Date().toISOString().split("T")[0]
 
-}
+    let query = supabase
+      .from("matches")
+      .select("*")
+      .eq("status", "open")
+      .gte("match_date", today)
+      .order("match_date", { ascending: true })
 
-loadMatches()
+    if (matchType) {
+      query = query.eq("match_type", matchType)
+    }
 
-},[])
+    if (city) {
+      query = query.ilike("city", `%${city}%`)
+    }
 
+    if (month) {
+      query = query
+        .gte("match_date", `${month}-01`)
+        .lte("match_date", `${month}-31`)
+    }
 
-async function expressInterest(matchId:string){
+    const { data } = await query
 
-const { data:userData } = await supabase.auth.getUser()
-const user = userData?.user
+    if (data) setMatches(data)
+  }
 
-if(!user){
-alert("Login required")
-return
-}
+  useEffect(() => {
+    loadMatches()
+  }, [])
 
-const { data:club } = await supabase
-.from("clubs")
-.select("id")
-.eq("created_by",user.id)
-.single()
+  async function expressInterest(matchId: string) {
 
-if(!club){
-alert("Club not found")
-return
-}
+    const { data: userData } = await supabase.auth.getUser()
+    const user = userData?.user
 
-const { error } = await supabase
-.from("match_interests")
-.insert({
-match_id:matchId,
-club_id:club.id
-})
+    if (!user) {
+      alert("Login required")
+      return
+    }
 
-if(error){
-alert(error.message)
-return
-}
+    const { data: club } = await supabase
+      .from("clubs")
+      .select("id")
+      .eq("created_by", user.id)
+      .single()
 
-alert("Interest sent!")
+    if (!club) {
+      alert("Club not found")
+      return
+    }
 
-}
+    const { error } = await supabase
+      .from("match_interests")
+      .insert({
+        match_id: matchId,
+        club_id: club.id
+      })
 
+    if (error) {
+      alert(error.message)
+      return
+    }
 
-return(
+    alert("Interest sent!")
+  }
 
-<div className="min-h-screen bg-slate-50">
+  return (
 
-<Navbar/>
+    <div className="min-h-screen bg-slate-50">
 
-<div className="flex">
+      <Navbar />
 
-<Sidebar/>
+      <div className="flex">
 
-<div className="flex-1 p-10">
+        <Sidebar />
 
-<h1 className="text-3xl font-bold mb-8">
-Match Board
-</h1>
+        <div className="flex-1 p-10">
 
-<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <h1 className="text-3xl font-bold mb-6">
+            Match Board
+          </h1>
 
-{matches.map((match)=>(
+          {/* ✅ FILTERS */}
+          <div className="flex gap-4 mb-8">
 
-<div
-key={match.id}
-className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition"
->
+            <select
+              value={matchType}
+              onChange={(e) => setMatchType(e.target.value)}
+              className="border px-4 py-2 rounded"
+            >
+              <option value="">All Types</option>
+              <option value="T20">T20</option>
+              <option value="40">40 Overs</option>
+            </select>
 
-<h3 className="text-lg font-bold mb-2">
-{match.club_name}
-</h3>
+            <input
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="border px-4 py-2 rounded"
+            />
 
-<p className="text-sm text-slate-500 mb-1">
-{match.city}
-</p>
+            <input
+              type="text"
+              placeholder="City / County"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className="border px-4 py-2 rounded"
+            />
 
-<p className="text-sm text-slate-500 mb-2">
-{match.match_date} • {match.format}
-</p>
+            <button
+              onClick={loadMatches}
+              className="bg-emerald-600 text-white px-5 py-2 rounded"
+            >
+              Search
+            </button>
 
-<p className="text-sm text-slate-600 mb-4">
-{match.description}
-</p>
+          </div>
 
-<div className="flex gap-2">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-<button
-onClick={()=>router.push(`/matches/${match.id}`)}
-className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-50"
->
-View
-</button>
+            {matches.map((match) => (
 
-<button
-onClick={()=>expressInterest(match.id)}
-className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700"
->
-I'm Interested
-</button>
+              <div
+                key={match.id}
+                className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition"
+              >
 
-</div>
+                <h3 className="text-lg font-bold mb-2">
+                  {match.club_name}
+                </h3>
 
-</div>
+                <p className="text-sm text-slate-500 mb-1">
+                  {match.city}
+                </p>
 
-))}
+                <p className="text-sm text-slate-500 mb-2">
+                  {match.match_date} • {match.format}
+                </p>
 
-</div>
+                <p className="text-sm text-slate-600 mb-4">
+                  {match.description}
+                </p>
 
-</div>
+                <div className="flex gap-2">
 
-</div>
+                  <button
+                    onClick={() => router.push(`/matches/${match.id}`)}
+                    className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-50"
+                  >
+                    View
+                  </button>
 
-</div>
+                  <button
+                    onClick={() => expressInterest(match.id)}
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700"
+                  >
+                    I'm Interested
+                  </button>
 
-)
+                </div>
 
+              </div>
+
+            ))}
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  )
 }
