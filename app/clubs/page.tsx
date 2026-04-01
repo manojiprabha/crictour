@@ -64,14 +64,14 @@ export default function ClubsPage() {
           </h1>
 
           {/* FILTER UI */}
-          <div className="flex gap-4 mb-8">
+          <div className="flex flex-col md:flex-row gap-4 mb-8">
 
             <input
               type="text"
               placeholder="Search club..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="border px-4 py-2 rounded w-60"
+              className="border px-4 py-2 rounded w-full md:w-60"
             />
 
             <input
@@ -79,7 +79,7 @@ export default function ClubsPage() {
               placeholder="City / County"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              className="border px-4 py-2 rounded w-60"
+              className="border px-4 py-2 rounded w-full md:w-60"
             />
 
             <button

@@ -113,12 +113,12 @@ export default function MatchesPage() {
           </h1>
 
           {/* ✅ FILTERS */}
-          <div className="flex gap-4 mb-8">
+          <div className="flex flex-col md:flex-row gap-4 mb-8">
 
             <select
               value={matchType}
               onChange={(e) => setMatchType(e.target.value)}
-              className="border px-4 py-2 rounded"
+              className="border px-4 py-2 rounded w-full md:w-auto"
             >
               <option value="">All Types</option>
               <option value="T20">T20</option>
@@ -129,7 +129,7 @@ export default function MatchesPage() {
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="border px-4 py-2 rounded"
+              className="border px-4 py-2 rounded w-full md:w-auto"
             />
 
             <input
@@ -137,12 +137,12 @@ export default function MatchesPage() {
               placeholder="City / County"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              className="border px-4 py-2 rounded"
+              className="border px-4 py-2 rounded w-full md:w-auto"
             />
 
             <button
               onClick={loadMatches}
-              className="bg-emerald-600 text-white px-5 py-2 rounded"
+              className="bg-emerald-600 text-white px-5 py-2 rounded w-full md:w-auto"
             >
               Search
             </button>
