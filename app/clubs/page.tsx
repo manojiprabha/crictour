@@ -134,12 +134,8 @@ export default function ClubsPage() {
                   {club.club_name}
                 </h3>
 
-                <p className="text-sm text-slate-500 mb-2">
+                <p className="text-sm text-slate-500 mb-3">
                   📍 {club.city}
-                </p>
-
-                <p className="text-sm text-slate-600 mb-3">
-                  Role: {club.role}
                 </p>
 
                 {club.play_cricket_url && (
