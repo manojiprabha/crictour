@@ -10,7 +10,6 @@ type Club = {
   id: string
   club_name: string
   city: string
-  role: string
   play_cricket_url: string
 }
 
@@ -54,7 +53,12 @@ export default function ClubsPage() {
     setLoading(false)
   }
 
-  // debounce search
+  function clearFilters() {
+    setSearch("")
+    setCity("")
+    setClubs([])
+  }
+
   useEffect(() => {
     const delay = setTimeout(() => {
       if (search || city) loadClubs()
@@ -97,12 +101,24 @@ export default function ClubsPage() {
               className="border px-4 py-2 rounded w-full md:w-60"
             />
 
-            <button
-              onClick={loadClubs}
-              className="bg-emerald-600 text-white px-5 py-2 rounded w-full md:w-auto"
-            >
-              Search
-            </button>
+            <div className="flex gap-2 w-full md:w-auto">
+
+              <button
+                onClick={loadClubs}
+                className="bg-emerald-600 text-white px-5 py-2 rounded w-full md:w-auto"
+              >
+                Search
+              </button>
+
+              <button
+                onClick={clearFilters}
+                disabled={!search && !city}
+                className="border px-5 py-2 rounded w-full md:w-auto disabled:opacity-30"
+              >
+                Clear
+              </button>
+
+            </div>
 
           </div>
 
