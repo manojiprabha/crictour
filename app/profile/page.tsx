@@ -5,6 +5,15 @@ import { supabase } from "@/lib/supabase"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
 
+const roles = [
+  "Captain",
+  "Vice Captain",
+  "Player",
+  "Manager",
+  "Secretary",
+  "Other"
+]
+
 export default function Profile() {
 
   const [clubId, setClubId] = useState("")
@@ -25,7 +34,6 @@ export default function Profile() {
 
       if (!user) return
 
-      // detect login type
       if (user.app_metadata?.provider === "google") {
         setIsGoogleUser(true)
       }
@@ -52,6 +60,11 @@ export default function Profile() {
   }, [])
 
   async function updateClub() {
+
+    if (!role) {
+      alert("Please select a role")
+      return
+    }
 
     const { error } = await supabase
       .from("clubs")
@@ -132,12 +145,17 @@ export default function Profile() {
               placeholder="City"
             />
 
-            <input
+            {/* ROLE DROPDOWN */}
+            <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
               className="w-full border p-2 rounded"
-              placeholder="Your Role"
-            />
+            >
+              <option value="">Select Role</option>
+              {roles.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
 
             <input
               value={playCricket}
@@ -153,7 +171,7 @@ export default function Profile() {
               Save Changes
             </button>
 
-            {/* EXTRA ACTIONS */}
+            {/* ACTION BUTTONS */}
             <div className="mt-6 flex gap-4 flex-wrap">
 
               <button
