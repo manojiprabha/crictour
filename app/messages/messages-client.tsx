@@ -40,8 +40,7 @@ export default function MessagesPage() {
 
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
-  /* ---------------- INIT ---------------- */
-
+  /* INIT */
   useEffect(() => {
     async function init() {
       const { data:userData } = await supabase.auth.getUser()
@@ -59,8 +58,7 @@ export default function MessagesPage() {
     init()
   }, [])
 
-  /* ---------------- LOAD CLUB NAMES ---------------- */
-
+  /* LOAD CLUBS */
   useEffect(() => {
     async function loadClubs() {
       const { data } = await supabase
@@ -70,10 +68,7 @@ export default function MessagesPage() {
       if (!data) return
 
       const map: Record<string,string> = {}
-
-      data.forEach(c => {
-        map[c.id] = c.club_name
-      })
+      data.forEach(c => map[c.id] = c.club_name)
 
       setClubMap(map)
     }
@@ -81,8 +76,7 @@ export default function MessagesPage() {
     loadClubs()
   }, [])
 
-  /* ---------------- FETCH MESSAGES ---------------- */
-
+  /* FETCH */
   async function fetchMessages() {
     const { data } = await supabase
       .from("messages")
@@ -101,8 +95,7 @@ export default function MessagesPage() {
     fetchMessages()
   }, [myClubId])
 
-  /* ---------------- BUILD CONVERSATIONS ---------------- */
-
+  /* BUILD */
   function buildConversations(allMessages: Message[]) {
 
     const map: Record<string, Conversation> = {}
@@ -112,10 +105,8 @@ export default function MessagesPage() {
       const otherClubId =
         msg.from_club === myClubId ? msg.to_club : msg.from_club
 
-      const key = otherClubId
-
-      if (!map[key]) {
-        map[key] = {
+      if (!map[otherClubId]) {
+        map[otherClubId] = {
           match_id: msg.match_id,
           club_id: otherClubId,
           last_message: msg.message,
@@ -124,29 +115,28 @@ export default function MessagesPage() {
         }
       }
 
-      if (new Date(msg.created_at) > new Date(map[key].created_at)) {
-        map[key].last_message = msg.message
-        map[key].created_at = msg.created_at
-        map[key].match_id = msg.match_id
+      if (new Date(msg.created_at) > new Date(map[otherClubId].created_at)) {
+        map[otherClubId].last_message = msg.message
+        map[otherClubId].created_at = msg.created_at
+        map[otherClubId].match_id = msg.match_id
       }
 
       if (msg.to_club === myClubId && !msg.is_read) {
-        map[key].unread_count += 1
+        map[otherClubId].unread_count += 1
       }
 
     })
 
-    const convs = Object.values(map).sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() -
-        new Date(a.created_at).getTime()
+    setConversations(
+      Object.values(map).sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() -
+          new Date(a.created_at).getTime()
+      )
     )
-
-    setConversations(convs)
   }
 
-  /* ---------------- CHAT FILTER (FIXED) ---------------- */
-
+  /* FILTER */
   const chatMessages = messages.filter((msg) => {
 
     if (!selectedClub) return false
@@ -157,14 +147,11 @@ export default function MessagesPage() {
     )
   })
 
-  /* ---------------- MARK AS READ + REFRESH ---------------- */
-
+  /* MARK READ */
   useEffect(() => {
-
     if (!selectedClub || !myClubId) return
 
     async function markRead() {
-
       await supabase
         .from("messages")
         .update({ is_read: true })
@@ -172,23 +159,19 @@ export default function MessagesPage() {
         .eq("from_club", selectedClub)
         .eq("is_read", false)
 
-      await fetchMessages() // ✅ instant UI update
+      await fetchMessages()
     }
 
     markRead()
-
   }, [selectedClub, myClubId])
 
-  /* ---------------- AUTO SCROLL ---------------- */
-
+  /* SCROLL */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [chatMessages])
 
-  /* ---------------- SEND MESSAGE ---------------- */
-
+  /* SEND */
   async function sendMessage() {
-
     if (!newMessage.trim()) return
 
     await supabase.from("messages").insert({
@@ -203,7 +186,7 @@ export default function MessagesPage() {
     await fetchMessages()
   }
 
-  /* ---------------- UI ---------------- */
+  /* UI */
 
   return (
 
@@ -215,100 +198,102 @@ export default function MessagesPage() {
 
         <Sidebar/>
 
-        {/* LEFT SIDEBAR */}
+        {/* MOBILE LOGIC */}
+        <div className="flex-1 flex">
 
-        <div className="w-80 border-r bg-white">
+          {/* SIDEBAR (hidden on mobile when chat open) */}
+          <div className={`bg-white border-r w-full md:w-80 ${
+            selectedClub ? "hidden md:block" : "block"
+          }`}>
 
-          <div className="p-4 font-bold border-b">
-            Inbox
-          </div>
-
-          {conversations.map((conv, i) => (
-
-            <div
-              key={i}
-              onClick={() =>
-                router.push(`/messages?club=${conv.club_id}&match=${conv.match_id}`)
-              }
-              className="p-4 border-b cursor-pointer hover:bg-gray-50 flex justify-between"
-            >
-
-              <div>
-                <p className="text-sm font-semibold">
-                  {clubMap[conv.club_id] || "Club"}
-                </p>
-
-                <p className="text-xs text-slate-500 truncate">
-                  {conv.last_message}
-                </p>
-              </div>
-
-              {conv.unread_count > 0 && (
-                <span className="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full">
-                  {conv.unread_count}
-                </span>
-              )}
-
+            <div className="p-4 font-bold border-b">
+              Inbox
             </div>
 
-          ))}
-
-        </div>
-
-        {/* CHAT AREA */}
-
-        <div className="flex-1 flex flex-col h-[calc(100vh-64px)]">
-
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-
-            {chatMessages.map(msg => (
-
+            {conversations.map((conv, i) => (
               <div
-                key={msg.id}
-                className={`max-w-xs px-4 py-2 rounded-xl text-sm ${
-                  msg.from_club === myClubId
-                    ? "bg-emerald-600 text-white ml-auto"
-                    : "bg-gray-200"
-                }`}
+                key={i}
+                onClick={() =>
+                  router.push(`/messages?club=${conv.club_id}&match=${conv.match_id}`)
+                }
+                className="p-4 border-b cursor-pointer hover:bg-gray-50 flex justify-between"
               >
-                {msg.message}
+                <div>
+                  <p className="text-sm font-semibold">
+                    {clubMap[conv.club_id] || "Club"}
+                  </p>
+                  <p className="text-xs text-slate-500 truncate">
+                    {conv.last_message}
+                  </p>
+                </div>
+
+                {conv.unread_count > 0 && (
+                  <span className="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full">
+                    {conv.unread_count}
+                  </span>
+                )}
               </div>
-
             ))}
-
-            <div ref={bottomRef} />
-
           </div>
 
-          {/* INPUT */}
-
+          {/* CHAT */}
           {selectedClub && (
+            <div className="flex-1 flex flex-col h-[calc(100vh-64px)]">
 
-            <div className="p-4 border-t flex gap-2">
+              {/* HEADER (BACK BUTTON MOBILE) */}
+              <div className="p-3 border-b flex items-center gap-2 bg-white">
+                <button
+                  onClick={() => router.push("/messages")}
+                  className="md:hidden text-sm"
+                >
+                  ← Back
+                </button>
 
-              <textarea
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault()
-                    sendMessage()
-                  }
-                }}
-                rows={1}
-                placeholder="Type message..."
-                className="flex-1 border rounded-xl p-2 resize-none outline-none text-sm"
-              />
+                <span className="font-semibold">
+                  {clubMap[selectedClub] || "Chat"}
+                </span>
+              </div>
 
-              <button
-                onClick={sendMessage}
-                className="bg-emerald-600 text-white px-4 py-2 rounded-lg"
-              >
-                Send
-              </button>
+              {/* MESSAGES */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+
+                {chatMessages.map(msg => (
+                  <div
+                    key={msg.id}
+                    className={`max-w-xs px-4 py-2 rounded-xl text-sm ${
+                      msg.from_club === myClubId
+                        ? "bg-emerald-600 text-white ml-auto"
+                        : "bg-gray-200"
+                    }`}
+                  >
+                    {msg.message}
+                  </div>
+                ))}
+
+                <div ref={bottomRef} />
+              </div>
+
+              {/* INPUT (STICKY) */}
+              <div className="border-t p-3 flex gap-2 bg-white sticky bottom-0">
+
+                <textarea
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  rows={1}
+                  placeholder="Type message..."
+                  className="flex-1 border rounded-full px-4 py-2 text-sm resize-none"
+                />
+
+                <button
+                  onClick={sendMessage}
+                  className="bg-emerald-600 text-white px-4 py-2 rounded-full"
+                >
+                  Send
+                </button>
+
+              </div>
 
             </div>
-
           )}
 
         </div>
