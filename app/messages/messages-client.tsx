@@ -255,7 +255,7 @@ export default function MessagesPage() {
               </div>
 
               {/* MESSAGES */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24">
 
                 {chatMessages.map(msg => (
                   <div
@@ -274,7 +274,7 @@ export default function MessagesPage() {
               </div>
 
               {/* INPUT (STICKY) */}
-              <div className="border-t p-3 flex gap-2 bg-white sticky bottom-0">
+              <div className="border-t p-3 flex gap-2 sticky bottom-16 bg-white">
 
                 <textarea
                   value={newMessage}
