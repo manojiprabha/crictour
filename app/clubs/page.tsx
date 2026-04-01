@@ -19,15 +19,25 @@ export default function ClubsPage() {
   const router = useRouter()
 
   const [clubs, setClubs] = useState<Club[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   const [search, setSearch] = useState("")
   const [city, setCity] = useState("")
 
   async function loadClubs() {
+
+    if (!search && !city) {
+      setClubs([])
+      return
+    }
+
     setLoading(true)
 
-    let query = supabase.from("clubs").select("*").order("club_name")
+    let query = supabase
+      .from("clubs")
+      .select("*")
+      .order("club_name")
+      .limit(20)
 
     if (search) {
       query = query.ilike("club_name", `%${search}%`)
@@ -44,9 +54,14 @@ export default function ClubsPage() {
     setLoading(false)
   }
 
+  // debounce search
   useEffect(() => {
-    loadClubs()
-  }, [])
+    const delay = setTimeout(() => {
+      if (search || city) loadClubs()
+    }, 400)
+
+    return () => clearTimeout(delay)
+  }, [search, city])
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -57,14 +72,14 @@ export default function ClubsPage() {
 
         <Sidebar />
 
-        <div className="flex-1 p-10">
+        <div className="flex-1 p-4 md:p-10 max-w-5xl mx-auto">
 
           <h1 className="text-3xl font-bold mb-6">
             Clubs Directory
           </h1>
 
           {/* FILTER UI */}
-          <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
 
             <input
               type="text"
@@ -84,16 +99,25 @@ export default function ClubsPage() {
 
             <button
               onClick={loadClubs}
-              className="bg-emerald-600 text-white px-5 py-2 rounded"
+              className="bg-emerald-600 text-white px-5 py-2 rounded w-full md:w-auto"
             >
               Search
             </button>
 
           </div>
 
-          {loading && <p className="text-slate-500">Loading clubs...</p>}
+          {/* EMPTY STATE */}
+          {!search && !city && (
+            <p className="text-slate-500 mb-6">
+              Start typing to search clubs by name or city
+            </p>
+          )}
 
-          {!loading && clubs.length === 0 && (
+          {loading && (
+            <p className="text-slate-500">Loading clubs...</p>
+          )}
+
+          {!loading && clubs.length === 0 && (search || city) && (
             <p className="text-slate-500">No clubs found.</p>
           )}
 
