@@ -10,6 +10,7 @@ type Club = {
   id: string
   club_name: string
   city: string
+  team_type: string
   play_cricket_url: string
 }
 
@@ -22,10 +23,11 @@ export default function ClubsPage() {
 
   const [search, setSearch] = useState("")
   const [city, setCity] = useState("")
+  const [teamType, setTeamType] = useState("") // ✅ NEW
 
   async function loadClubs() {
 
-    if (!search && !city) {
+    if (!search && !city && !teamType) {
       setClubs([])
       return
     }
@@ -38,13 +40,9 @@ export default function ClubsPage() {
       .order("club_name")
       .limit(20)
 
-    if (search) {
-      query = query.ilike("club_name", `%${search}%`)
-    }
-
-    if (city) {
-      query = query.ilike("city", `%${city}%`)
-    }
+    if (search) query = query.ilike("club_name", `%${search}%`)
+    if (city) query = query.ilike("city", `%${city}%`)
+    if (teamType) query = query.eq("team_type", teamType)
 
     const { data } = await query
 
@@ -56,16 +54,17 @@ export default function ClubsPage() {
   function clearFilters() {
     setSearch("")
     setCity("")
+    setTeamType("") // ✅ NEW
     setClubs([])
   }
 
   useEffect(() => {
     const delay = setTimeout(() => {
-      if (search || city) loadClubs()
+      if (search || city || teamType) loadClubs()
     }, 400)
 
     return () => clearTimeout(delay)
-  }, [search, city])
+  }, [search, city, teamType])
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -101,6 +100,17 @@ export default function ClubsPage() {
               className="border px-4 py-2 rounded w-full md:w-60"
             />
 
+            {/* ✅ TEAM FILTER */}
+            <select
+              value={teamType}
+              onChange={(e) => setTeamType(e.target.value)}
+              className="border px-4 py-2 rounded w-full md:w-40"
+            >
+              <option value="">All Teams</option>
+              <option value="Men">Men</option>
+              <option value="Women">Women</option>
+            </select>
+
             <div className="flex gap-2 w-full md:w-auto">
 
               <button
@@ -112,7 +122,7 @@ export default function ClubsPage() {
 
               <button
                 onClick={clearFilters}
-                disabled={!search && !city}
+                disabled={!search && !city && !teamType}
                 className="border px-5 py-2 rounded w-full md:w-auto disabled:opacity-30"
               >
                 Clear
@@ -122,20 +132,13 @@ export default function ClubsPage() {
 
           </div>
 
-          {/* EMPTY STATE */}
-          {!search && !city && (
+          {!search && !city && !teamType && (
             <p className="text-slate-500 mb-6">
-              Start typing to search clubs by name or city
+              Start searching clubs
             </p>
           )}
 
-          {loading && (
-            <p className="text-slate-500">Loading clubs...</p>
-          )}
-
-          {!loading && clubs.length === 0 && (search || city) && (
-            <p className="text-slate-500">No clubs found.</p>
-          )}
+          {loading && <p>Loading clubs...</p>}
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
 
@@ -143,12 +146,19 @@ export default function ClubsPage() {
               <div
                 key={club.id}
                 onClick={() => router.push(`/clubs/${club.id}`)}
-                className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md hover:border-emerald-500 transition cursor-pointer"
+                className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition cursor-pointer"
               >
 
                 <h3 className="text-lg font-bold mb-2">
                   {club.club_name}
                 </h3>
+
+                {/* ✅ TEAM BADGE */}
+                {club.team_type && (
+                  <span className="text-xs bg-emerald-100 px-2 py-1 rounded mb-2 inline-block">
+                    {club.team_type} Team
+                  </span>
+                )}
 
                 <p className="text-sm text-slate-500 mb-3">
                   📍 {club.city}

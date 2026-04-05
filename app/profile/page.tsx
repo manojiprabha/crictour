@@ -20,6 +20,7 @@ export default function Profile() {
   const [clubName, setClubName] = useState("")
   const [city, setCity] = useState("")
   const [role, setRole] = useState("")
+  const [teamType, setTeamType] = useState("") // ✅ NEW
   const [playCricket, setPlayCricket] = useState("")
 
   const [isGoogleUser, setIsGoogleUser] = useState(false)
@@ -49,6 +50,7 @@ export default function Profile() {
         setClubName(data.club_name)
         setCity(data.city)
         setRole(data.role)
+        setTeamType(data.team_type || "") // ✅ NEW
         setPlayCricket(data.play_cricket_url || "")
       }
 
@@ -61,8 +63,8 @@ export default function Profile() {
 
   async function updateClub() {
 
-    if (!role) {
-      alert("Please select a role")
+    if (!role || !teamType) {
+      alert("Role and team type required")
       return
     }
 
@@ -72,46 +74,36 @@ export default function Profile() {
         club_name: clubName,
         city,
         role,
+        team_type: teamType, // ✅ NEW
         play_cricket_url: playCricket
       })
       .eq("id", clubId)
 
-    if (error) {
-      alert(error.message)
-    } else {
-      alert("Club updated")
-    }
+    if (error) alert(error.message)
+    else alert("Club updated")
   }
 
   async function changePassword() {
 
     if (isGoogleUser) {
-      alert("You signed in with Google. Change password via Google account.")
+      alert("Change password via Google")
       return
     }
 
     const newPassword = prompt("Enter new password")
-
     if (!newPassword) return
 
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
-    })
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
 
-    if (error) {
-      alert(error.message)
-    } else {
-      alert("Password updated successfully")
-    }
+    if (error) alert(error.message)
+    else alert("Password updated")
   }
 
   function contactUs() {
     window.location.href = "mailto:support@crictour.app"
   }
 
-  if (loading) {
-    return <p className="p-10">Loading...</p>
-  }
+  if (loading) return <p className="p-10">Loading...</p>
 
   return (
 
@@ -135,17 +127,15 @@ export default function Profile() {
               value={clubName}
               onChange={(e) => setClubName(e.target.value)}
               className="w-full border p-2 rounded"
-              placeholder="Club Name"
             />
 
             <input
               value={city}
               onChange={(e) => setCity(e.target.value)}
               className="w-full border p-2 rounded"
-              placeholder="City"
             />
 
-            {/* ROLE DROPDOWN */}
+            {/* ROLE */}
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
@@ -157,33 +147,42 @@ export default function Profile() {
               ))}
             </select>
 
+            {/* ✅ TEAM TYPE */}
+            <select
+              value={teamType}
+              onChange={(e) => setTeamType(e.target.value)}
+              className="w-full border p-2 rounded"
+            >
+              <option value="">Select Team</option>
+              <option value="Men">Men's Team</option>
+              <option value="Women">Women's Team</option>
+            </select>
+
             <input
               value={playCricket}
               onChange={(e) => setPlayCricket(e.target.value)}
               className="w-full border p-2 rounded"
-              placeholder="Play Cricket URL"
             />
 
             <button
               onClick={updateClub}
-              className="bg-emerald-600 text-white px-4 py-2 rounded w-full md:w-auto"
+              className="bg-emerald-600 text-white px-4 py-2 rounded"
             >
               Save Changes
             </button>
 
-            {/* ACTION BUTTONS */}
             <div className="mt-6 flex gap-4 flex-wrap">
 
               <button
                 onClick={changePassword}
-                className="bg-slate-800 text-white px-5 py-2 rounded w-full md:w-auto"
+                className="bg-slate-800 text-white px-5 py-2 rounded"
               >
                 Change Password
               </button>
 
               <button
                 onClick={contactUs}
-                className="border px-5 py-2 rounded w-full md:w-auto"
+                className="border px-5 py-2 rounded"
               >
                 Contact Us
               </button>
