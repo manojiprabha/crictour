@@ -14,7 +14,7 @@ type Match = {
   format: string
   match_date: string
   description: string
-  team_type: string // ✅ NEW
+  team_type: string
 }
 
 export default function MatchesPage() {
@@ -26,7 +26,7 @@ export default function MatchesPage() {
   const [matchType, setMatchType] = useState("")
   const [city, setCity] = useState("")
   const [month, setMonth] = useState("")
-  const [teamType, setTeamType] = useState("") // ✅ NEW
+  const [teamType, setTeamType] = useState("")
 
   async function loadMatches() {
 
@@ -54,7 +54,7 @@ export default function MatchesPage() {
     }
 
     if (teamType) {
-      query = query.eq("team_type", teamType) // ✅ NEW
+      query = query.eq("team_type", teamType)
     }
 
     const { data } = await query
@@ -65,6 +65,14 @@ export default function MatchesPage() {
   useEffect(() => {
     loadMatches()
   }, [])
+
+  function clearFilters() {
+    setMatchType("")
+    setCity("")
+    setMonth("")
+    setTeamType("")
+    loadMatches()
+  }
 
   async function expressInterest(matchId: string) {
 
@@ -146,7 +154,6 @@ export default function MatchesPage() {
               className="border px-4 py-2 rounded w-full md:w-auto"
             />
 
-            {/* ✅ TEAM TYPE FILTER */}
             <select
               value={teamType}
               onChange={(e) => setTeamType(e.target.value)}
@@ -158,12 +165,24 @@ export default function MatchesPage() {
               <option value="Junior">Junior</option>
             </select>
 
-            <button
-              onClick={loadMatches}
-              className="bg-emerald-600 text-white px-5 py-2 rounded w-full md:w-auto"
-            >
-              Search
-            </button>
+            <div className="flex gap-2 w-full md:w-auto">
+
+              <button
+                onClick={loadMatches}
+                className="bg-emerald-600 text-white px-5 py-2 rounded w-full md:w-auto"
+              >
+                Search
+              </button>
+
+              <button
+                onClick={clearFilters}
+                disabled={!matchType && !city && !month && !teamType}
+                className="border px-5 py-2 rounded w-full md:w-auto disabled:opacity-30"
+              >
+                Clear
+              </button>
+
+            </div>
 
           </div>
 
@@ -180,7 +199,6 @@ export default function MatchesPage() {
                   {match.club_name}
                 </h3>
 
-                {/* ✅ TEAM BADGE */}
                 {match.team_type && (
                   <span className="text-xs bg-emerald-100 px-2 py-1 rounded mb-2 inline-block">
                     {match.team_type} Team
