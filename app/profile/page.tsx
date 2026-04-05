@@ -156,6 +156,7 @@ export default function Profile() {
               <option value="">Select Team</option>
               <option value="Men">Men's Team</option>
               <option value="Women">Women's Team</option>
+              <option value="Junior">Junior Team</option>
             </select>
 
             <input

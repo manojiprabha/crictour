@@ -109,6 +109,7 @@ export default function ClubsPage() {
               <option value="">All Teams</option>
               <option value="Men">Men</option>
               <option value="Women">Women</option>
+              <option value="Junior">Junior</option>
             </select>
 
             <div className="flex gap-2 w-full md:w-auto">

@@ -13,7 +13,7 @@ export default function RegisterClub() {
   const [city, setCity] = useState("")
   const [address, setAddress] = useState("")
   const [role, setRole] = useState("")
-  const [teamType, setTeamType] = useState("") // ✅ NEW
+  const [teamType, setTeamType] = useState("")
   const [phone, setPhone] = useState("")
   const [playCricket, setPlayCricket] = useState("")
   const [loading, setLoading] = useState(false)
@@ -43,14 +43,17 @@ export default function RegisterClub() {
       return
     }
 
+    // ✅ NEW: formatted name
+    const formattedName = `${clubName.trim()} (${teamType})`
+
     const { error } = await supabase
       .from("clubs")
       .insert({
-        club_name: clubName,
+        club_name: formattedName, // ✅ UPDATED
         city,
         address,
         role,
-        team_type: teamType, // ✅ NEW
+        team_type: teamType,
         contact_phone: phone,
         play_cricket_url: playCricket,
         created_by: user.id
@@ -117,7 +120,7 @@ export default function RegisterClub() {
               <option>Player</option>
             </select>
 
-            {/* ✅ TEAM TYPE (NEW) */}
+            {/* TEAM TYPE */}
             <select
               value={teamType}
               onChange={(e) => setTeamType(e.target.value)}
@@ -126,6 +129,7 @@ export default function RegisterClub() {
               <option value="">Select Team Type</option>
               <option value="Men">Men's Team</option>
               <option value="Women">Women's Team</option>
+              <option value="Junior">Junior Team</option>
             </select>
 
             <input
